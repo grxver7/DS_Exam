@@ -1,0 +1,195 @@
+---
+title: "Data Science Exam, Fahrraddiebstahl in Berlin 2023 - 2024"
+output: html_notebook
+---
+
+# Data Science Exam, Fahrraddiebstahl in Berlin 2023 - 2024
+
+### Datensatz laden
+
+```{r}
+install.packages("readxl")
+```
+
+```{r}
+# Load the necessary libraries
+library(readxl)
+
+# Load the CSV dataset with ISO-8859-1 encoding
+fahrraddiebstahl_datensatz <- read.csv("20.1 Stuttgart - Fahrraddiebstahl 2023+2024 Berlin/Fahrraddiebstahl in Berlin 2023 - 2024.csv", fileEncoding = "ISO-8859-1")
+
+# Load the Excel dataset
+lor_datensatz <- read_excel("20.1 Stuttgart - Fahrraddiebstahl 2023+2024 Berlin/LOR-Räume mit Kontextindikatoren.xlsx")
+
+# Check the first few rows of the imported data
+head(fahrraddiebstahl_datensatz)
+head(lor_datensatz)
+```
+
+Konnvertiere den Datensatz in einen Dataframe
+
+```{r}
+fahrraddiebstahl_datensatz_df <- data.frame(fahrraddiebstahl_datensatz)
+```
+
+```{r}
+str(fahrraddiebstahl_datensatz)
+```
+
+```{r}
+str(lor_datensatz)
+```
+
+```{r}
+install.packages("dplyr")
+```
+
+Verteilungs (Versuchter Raub/Erfolreicher Raub/Unbekannt)
+
+```{r}
+tabelle_versuche <- table(fahrraddiebstahl_datensatz['VERSUCH'])
+print(tabelle_versuche)
+```
+
+Anzahl Vorfälle insgesamt
+
+```{r}
+anzahl_fälle <- nrow(fahrraddiebstahl_datensatz)
+print(paste("Die Anzahl der Vorfälle eines Diebstahls oder eines Diebstahlsversuch beträgt:", anzahl_fälle))
+```
+
+Art der Fahrräder Vergleich:
+
+```{r}
+# Tabelle erstellen
+tabelle_fahrrad_art <- table(fahrraddiebstahl_datensatz['ART_DES_FAHRRADS'])
+
+# Tabelle in ein Dataframe umwandeln, um die Tabele übersichtlicher darzustellen
+tabelle_fahrrad_art_df <- as.data.frame(tabelle_fahrrad_art)
+
+# Tabelle anzeigen
+print(tabelle_fahrrad_art_df)
+```
+
+Verteilung Delikte
+
+```{r}
+# Tabelle erstellen
+tabelle_delikte <- table(fahrraddiebstahl_datensatz['DELIKT'])
+
+# Tabelle in ein Dataframe umwandeln, um die Tabele übersichtlicher darzustellen
+tabelle_delikte_df <- as.data.frame(tabelle_delikte)
+
+# Tabelle anzeigen
+print(tabelle_delikte_df)
+```
+
+Verteilung Erfassungsgrund:
+
+```{r}
+# Tabelle erstellen
+tabelle_erfassungsgrund <- table(fahrraddiebstahl_datensatz['ERFASSUNGSGRUND'])
+
+# Tabelle in ein Dataframe umwandeln, um die Tabele übersichtlicher darzustellen
+tabelle_erfassungsgrund_df <- as.data.frame(tabelle_erfassungsgrund)
+
+# Tabelle anzeigen
+print(tabelle_erfassungsgrund_df)
+```
+
+## Verteilungsfunktionen
+
+```{r}
+# Gesamtzahl und Durchschnitt der Schadenshöhe je Fahrradart berechnen
+fahrrad_schaden_stats <- aggregate(SCHADENSHOEHE ~ ART_DES_FAHRRADS, 
+                                   data = fahrraddiebstahl_datensatz, 
+                                   FUN = function(x) c(Gesamt = sum(x), Durchschnitt = mean(x)))
+
+# Ergebnis als DataFrame umwandeln
+fahrrad_schaden_stats_df <- do.call(data.frame, fahrrad_schaden_stats)
+
+# Tabelle mit den gestohlenen Fahrrädern und den Schadenshöhen zusammenführen
+fahrrad_schaden_stats_df <- merge(tabelle_fahrrad_art_df, fahrrad_schaden_stats_df, by = "ART_DES_FAHRRADS")
+
+# Tabelle anzeigen
+print(fahrrad_schaden_stats_df)
+```
+
+```{r}
+summary(fahrrad_schaden_stats_df)
+```
+
+## Durchschnittswerte
+
+Um die richtigen Intervalle für weiterführende Zeitbaiserte Auswertungen führen zu können, sollte zuerst die Durchschnittsdauer eines Raubes insgesamt, tagsüber und nachts erfasst werden.
+
+```{r}
+# Umbenennen des originalen Dataframes (falls notwendig)
+fahrraddiebstahl_dauer_df <- fahrraddiebstahl_datensatz_df
+
+# Umwandlung von Tatzeit Anfang in POSIXct
+fahrraddiebstahl_dauer_df$TATZEIT_ANFANG <- as.POSIXct(
+  paste(fahrraddiebstahl_dauer_df$TATZEIT_ANFANG_DATUM, fahrraddiebstahl_dauer_df$TATZEIT_ANFANG_STUNDE),
+  format = "%d.%m.%Y %H"
+)
+
+# Umwandlung von Tatzeit Ende in POSIXct
+fahrraddiebstahl_dauer_df$TATZEIT_ENDE <- as.POSIXct(
+  paste(fahrraddiebstahl_dauer_df$TATZEIT_ENDE_DATUM, fahrraddiebstahl_dauer_df$TATZEIT_ENDE_STUNDE),
+  format = "%d.%m.%Y %H"
+)
+
+# Berechnung der Dauer in Stunden
+fahrraddiebstahl_dauer_df$Dauer <- as.numeric(
+  difftime(fahrraddiebstahl_dauer_df$TATZEIT_ENDE, fahrraddiebstahl_dauer_df$TATZEIT_ANFANG, units = "hours"))
+```
+
+```{r}
+# Berechnung des Durchschnitts
+durchschnitt <- mean(fahrraddiebstahl_dauer_df$Dauer, na.rm = TRUE)
+durchschnitt
+```
+
+Diebstahlszeiten tagsüber/nachts/mehrere Tage
+
+```{r}
+# Tagsüber: Tatzeit zwischen 6 und 18 Uhr und Dauer <= 24 Stunden
+fahrraddiebstahl_dauer_tagsüber_df <- subset(
+  fahrraddiebstahl_dauer_df,
+  as.numeric(format(TATZEIT_ANFANG, "%H")) > 6 & as.numeric(format(TATZEIT_ANFANG, "%H")) < 18 &
+    Dauer <= 24
+)
+
+# Nachts: Tatzeit >= 18 Uhr oder < 6 Uhr und Dauer <= 24 Stunden
+fahrraddiebstahl_dauer_nachts_df <- subset(
+  fahrraddiebstahl_dauer_df,
+  (as.numeric(format(TATZEIT_ANFANG, "%H")) >= 18 | as.numeric(format(TATZEIT_ANFANG, "%H")) < 6) &
+    Dauer <= 24
+)
+
+# Über mehrere Tage: Dauer > 24 Stunden
+fahrraddiebstahl_dauer_mehrere_tage_df <- subset(
+  fahrraddiebstahl_dauer_df,
+  Dauer > 24
+)
+
+# Berechnung des Durchschnitts für jede Kategorie
+durchschnitt_tagsüber <- mean(fahrraddiebstahl_dauer_tagsüber_df$Dauer, na.rm = TRUE)
+durchschnitt_nachts <- mean(fahrraddiebstahl_dauer_nachts_df$Dauer, na.rm = TRUE)
+durchschnitt_mehrere_tage <- mean(fahrraddiebstahl_dauer_mehrere_tage_df$Dauer, na.rm = TRUE)
+
+# Ergebnisse ausgeben
+list(
+  durchschnitt_tagsüber = durchschnitt_tagsüber,
+  durchschnitt_nachts = durchschnitt_nachts,
+  durchschnitt_mehrere_tage = durchschnitt_mehrere_tage
+)
+```
+
+Zusammenfassung der Diebstahlszeiten
+
+```{r}
+summary(fahrraddiebstahl_dauer_tagsüber_df$Dauer)
+summary(fahrraddiebstahl_dauer_nachts_df$Dauer)
+
+```
