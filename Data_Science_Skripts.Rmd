@@ -58,7 +58,7 @@ anzahl_fälle <- nrow(fahrraddiebstahl_datensatz)
 print(paste("Die Anzahl der Vorfälle eines Diebstahls oder eines Diebstahlsversuch beträgt:", anzahl_fälle))
 ```
 
-Art der Fahrräder Vergleich:
+### Art der Fahrräder Vergleich:
 
 ```{r}
 # Tabelle erstellen
@@ -71,7 +71,7 @@ tabelle_fahrrad_art_df <- as.data.frame(tabelle_fahrrad_art)
 print(tabelle_fahrrad_art_df)
 ```
 
-Verteilung Delikte
+### Verteilung Delikte
 
 ```{r}
 # Tabelle erstellen
@@ -84,7 +84,7 @@ tabelle_delikte_df <- as.data.frame(tabelle_delikte)
 print(tabelle_delikte_df)
 ```
 
-Verteilung Erfassungsgrund:
+### Verteilung Erfassungsgrund:
 
 ```{r}
 # Tabelle erstellen
@@ -119,9 +119,11 @@ print(fahrrad_schaden_stats_df)
 summary(fahrrad_schaden_stats_df)
 ```
 
-## Durchschnittswerte
+# Analyse der Tagzeiten
 
-Um die richtigen Intervalle für weiterführende Zeitbaiserte Auswertungen führen zu können, sollte zuerst die Durchschnittsdauer eines Raubes insgesamt, tagsüber und nachts erfasst werden.
+## Präparation des Datensatz
+
+### # Umwandlung und Präparation der Diebstahlszeien
 
 ```{r}
 # Umbenennen des originalen Dataframes (falls notwendig)
@@ -144,13 +146,7 @@ fahrraddiebstahl_dauer_df$Dauer <- as.numeric(
   difftime(fahrraddiebstahl_dauer_df$TATZEIT_ENDE, fahrraddiebstahl_dauer_df$TATZEIT_ANFANG, units = "hours"))
 ```
 
-```{r}
-# Berechnung des Durchschnitts
-durchschnitt <- mean(fahrraddiebstahl_dauer_df$Dauer, na.rm = TRUE)
-durchschnitt
-```
-
-Diebstahlszeiten tagsüber/nachts/mehrere Tage
+### # Aufteilung nacht tagsüber/nachts und mehrere Tage
 
 ```{r}
 # Tagsüber: Tatzeit zwischen 6 und 18 Uhr und Dauer <= 24 Stunden
@@ -172,24 +168,101 @@ fahrraddiebstahl_dauer_mehrere_tage_df <- subset(
   fahrraddiebstahl_dauer_df,
   Dauer > 24
 )
-
-# Berechnung des Durchschnitts für jede Kategorie
-durchschnitt_tagsüber <- mean(fahrraddiebstahl_dauer_tagsüber_df$Dauer, na.rm = TRUE)
-durchschnitt_nachts <- mean(fahrraddiebstahl_dauer_nachts_df$Dauer, na.rm = TRUE)
-durchschnitt_mehrere_tage <- mean(fahrraddiebstahl_dauer_mehrere_tage_df$Dauer, na.rm = TRUE)
-
-# Ergebnisse ausgeben
-list(
-  durchschnitt_tagsüber = durchschnitt_tagsüber,
-  durchschnitt_nachts = durchschnitt_nachts,
-  durchschnitt_mehrere_tage = durchschnitt_mehrere_tage
-)
 ```
+## Kennzahlen
 
-Zusammenfassung der Diebstahlszeiten
+
+### # Durchschnittszeitwn
 
 ```{r}
+# Berechnung des Durchschnitts der allgemeinen Dauer
+durchschnitt <- mean(fahrraddiebstahl_dauer_df$Dauer, na.rm = TRUE)
+print(paste("Durchschnittszeit allgemin beträgt:", durchschnitt))
+```
+
+### \# Zusammenfassung der Diebstahlsdauerzeiten
+
+```{r}
+cat("Zusammenfassungen der Diebstahlsdauerzeiten")
+cat("\nAllgemein:\n")
+summary(fahrraddiebstahl_dauer_df$Dauer)
+
+cat("\nTagsüber:\n")
 summary(fahrraddiebstahl_dauer_tagsüber_df$Dauer)
+
+cat("\nNachts:\n")
 summary(fahrraddiebstahl_dauer_nachts_df$Dauer)
 
+cat("\nMehrere Tage:\n")
+summary(fahrraddiebstahl_dauer_mehrere_tage_df$Dauer)
+```
+
+### \# Dauer Verteilungsfuktion
+
+```{r}
+#Importiere Bibliothek
+library(ggplot2)
+
+# Tagsüber
+ggplot(data = fahrraddiebstahl_dauer_tagsüber_df, aes(x = Dauer)) +
+  geom_bar(fill = "steelblue") +
+  labs(
+    title = "Verteilung der Diebstahldauer tagsüber",
+    x = "Dauer (Stunden)",
+    y = "Anzahl der Fälle"
+  ) +
+  scale_x_continuous(breaks = seq(0, max(fahrraddiebstahl_dauer_tagsüber_df$Dauer), by = 1),
+                     labels = function(x) ifelse(x == 0, "<1", x)) +
+  theme_minimal()
+
+# Nachts
+ggplot(data = fahrraddiebstahl_dauer_nachts_df, aes(x = Dauer)) +
+  geom_bar(fill = "steelblue") +
+  labs(
+    title = "Verteilung der Diebstahldauer nachts",
+    x = "Dauer (Stunden)",
+    y = "Anzahl der Fälle"
+  ) +
+  scale_x_continuous(breaks = seq(0, max(fahrraddiebstahl_dauer_nachts_df$Dauer), by = 1),
+                     labels = function(x) ifelse(x == 0, "<1", x)) +
+  theme_minimal()
+
+# mehrere Tage
+ggplot(data = fahrraddiebstahl_dauer_mehrere_tage_df, aes(x = Dauer)) +
+  geom_bar(fill = "steelblue") +
+  labs(
+    title = "Verteilung der Diebstahldauer mehrere Tage",
+    x = "Dauer (Stunden)",
+    y = "Anzahl der Fälle"
+  ) +
+  scale_x_continuous(breaks = seq(0, max(fahrraddiebstahl_dauer_mehrere_tage_df$Dauer), by = 1),
+                     labels = function(x) ifelse(x == 0, "<1", x)) +
+  theme_minimal()
+```
+
+### \# Anzahl der Tatzeit tagsüber/nacht/mehrere Tage
+
+```{r}
+# Erstellen eines Datenrahmens mit den Fallzahlen
+categories <- c("Tagsüber", "Nachts", "Über mehrere Tage")
+counts <- c(
+  nrow(fahrraddiebstahl_dauer_tagsüber_df),
+  nrow(fahrraddiebstahl_dauer_nachts_df),
+  nrow(fahrraddiebstahl_dauer_mehrere_tage_df)
+)
+
+# Datenrahmen für die Visualisierung
+fahrraddiebstahl_counts <- data.frame(Category = categories, Count = counts)
+
+# Zeichnen des Balkendiagramms
+library(ggplot2)
+ggplot(fahrraddiebstahl_counts, aes(x = Category, y = Count, fill = Category)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Fahrraddiebstähle nach Tatzeit und Dauer",
+    x = "Kategorie",
+    y = "Anzahl der Fälle"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("steelblue", "darkorange", "darkred"))
 ```
