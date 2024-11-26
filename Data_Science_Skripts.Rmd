@@ -119,11 +119,11 @@ print(fahrrad_schaden_stats_df)
 summary(fahrrad_schaden_stats_df)
 ```
 
-# Analyse der Tagzeiten
+# Analyse der Diebstähle nach Tagzeiten
 
 ## Präparation des Datensatz
 
-### # Umwandlung und Präparation der Diebstahlszeien
+### \# Umwandlung und Präparation der Diebstahlszeien
 
 ```{r}
 # Umbenennen des originalen Dataframes (falls notwendig)
@@ -146,7 +146,7 @@ fahrraddiebstahl_dauer_df$Dauer <- as.numeric(
   difftime(fahrraddiebstahl_dauer_df$TATZEIT_ENDE, fahrraddiebstahl_dauer_df$TATZEIT_ANFANG, units = "hours"))
 ```
 
-### # Aufteilung nacht tagsüber/nachts und mehrere Tage
+### \# Aufteilung nacht tagsüber/nachts und mehrere Tage
 
 ```{r}
 # Tagsüber: Tatzeit zwischen 6 und 18 Uhr und Dauer <= 24 Stunden
@@ -169,10 +169,10 @@ fahrraddiebstahl_dauer_mehrere_tage_df <- subset(
   Dauer > 24
 )
 ```
+
 ## Kennzahlen
 
-
-### # Durchschnittszeitwn
+### \# Durchschnittszeiten
 
 ```{r}
 # Berechnung des Durchschnitts der allgemeinen Dauer
@@ -198,6 +198,12 @@ summary(fahrraddiebstahl_dauer_mehrere_tage_df$Dauer)
 ```
 
 ### \# Dauer Verteilungsfuktion
+
+#### Installiere ggplot2
+
+```{r}
+install.packages("ggplot2")
+```
 
 ```{r}
 #Importiere Bibliothek
@@ -240,29 +246,70 @@ ggplot(data = fahrraddiebstahl_dauer_mehrere_tage_df, aes(x = Dauer)) +
   theme_minimal()
 ```
 
-### \# Anzahl der Tatzeit tagsüber/nacht/mehrere Tage
+## Anzahl der Tatzeiten nach Stunde
+
+Mit diesem Kapitel der Datenanalyse sollen präferierte Tatzeiten herausgefunden werden.
+
+### Tabelle "Anzahl der Tatzeiten nach Stunde"
 
 ```{r}
-# Erstellen eines Datenrahmens mit den Fallzahlen
-categories <- c("Tagsüber", "Nachts", "Über mehrere Tage")
-counts <- c(
-  nrow(fahrraddiebstahl_dauer_tagsüber_df),
-  nrow(fahrraddiebstahl_dauer_nachts_df),
-  nrow(fahrraddiebstahl_dauer_mehrere_tage_df)
-)
+# Konvertiere `TATZEIT_ANFANG_STUNDE` in numerisch, um Fehler mit NA-Werten zu vermeiden
+fahrraddiebstahl_datensatz_df$TATZEIT_STUNDE_ANZAHL <- as.numeric(fahrraddiebstahl_datensatz_df$TATZEIT_ANFANG_STUNDE)
 
-# Datenrahmen für die Visualisierung
-fahrraddiebstahl_counts <- data.frame(Category = categories, Count = counts)
+# Gruppiere nach `TATZEIT_ANFANG_STUNDE` und zähle die Anzahl der Fälle je Stunde
+library(dplyr)
 
-# Zeichnen des Balkendiagramms
-library(ggplot2)
-ggplot(fahrraddiebstahl_counts, aes(x = Category, y = Count, fill = Category)) +
-  geom_bar(stat = "identity") +
+stunden_anzahl <- fahrraddiebstahl_datensatz_df %>%
+  filter(!is.na(TATZEIT_STUNDE_ANZAHL)) %>% # NA-Werte entfernen
+  group_by(TATZEIT_STUNDE_ANZAHL) %>%
+  summarise(Anzahl = n())
+
+# Ergebnisse anzeigen
+print(stunden_anzahl)
+```
+
+### Balkendiagramm"Anzahl der Tatzeiten nach Stunde"
+
+```{r}
+# Plot als Balkendiagramm
+ggplot(stunden_anzahl, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anzahl)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
   labs(
-    title = "Fahrraddiebstähle nach Tatzeit und Dauer",
-    x = "Kategorie",
+    title = "Fälle von Fahrraddiebstählen je Stunde",
+    x = "Stunde des Tages",
     y = "Anzahl der Fälle"
   ) +
-  theme_minimal() +
-  scale_fill_manual(values = c("steelblue", "darkorange", "darkred"))
+  theme_minimal()
+```
+
+## Anzahl der Tatzeiten nach Tag
+
+```{r}
+# Konvertiere `TATZEIT_ANFANG_DATUM` in ein Datum-Format (falls noch nicht geschehen)
+fahrraddiebstahl_datensatz_df$TATZEIT_DATUM_ANZAHL <- as.Date(fahrraddiebstahl_datensatz_df$TATZEIT_ANFANG_DATUM, format = "%d.%m.%Y")
+
+# Gruppiere nach `TATZEIT_DATUM_ANZAHL` und zähle die Anzahl der Fälle je Datum
+library(dplyr)
+
+datum_anzahl <- fahrraddiebstahl_datensatz_df %>%
+  filter(!is.na(TATZEIT_DATUM_ANZAHL)) %>% # NA-Werte entfernen
+  group_by(TATZEIT_DATUM_ANZAHL) %>%
+  summarise(Anzahl = n())
+
+# Ergebnisse anzeigen
+print(datum_anzahl)
+```
+
+```{r}
+library(ggplot2)
+
+# Plot als Balkendiagramm
+ggplot(datum_anzahl, aes(x = TATZEIT_DATUM_ANZAHL, y = Anzahl)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(
+    title = "Fälle von Fahrraddiebstählen je Datum",
+    x = "Datum",
+    y = "Anzahl der Fälle"
+  ) +
+  theme_minimal()
 ```
