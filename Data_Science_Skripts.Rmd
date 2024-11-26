@@ -1,6 +1,8 @@
 ---
 title: "Data Science Exam, Fahrraddiebstahl in Berlin 2023 - 2024"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 # Data Science Exam, Fahrraddiebstahl in Berlin 2023 - 2024
@@ -241,7 +243,7 @@ ggplot(data = fahrraddiebstahl_dauer_mehrere_tage_df, aes(x = Dauer)) +
     x = "Dauer (Stunden)",
     y = "Anzahl der Fälle"
   ) +
-  scale_x_continuous(breaks = seq(0, max(fahrraddiebstahl_dauer_mehrere_tage_df$Dauer), by = 1),
+  scale_x_continuous(breaks = seq(0, max(fahrraddiebstahl_dauer_mehrere_tage_df$Dauer), by = 5),
                      labels = function(x) ifelse(x == 0, "<1", x)) +
   theme_minimal()
 ```
@@ -250,7 +252,7 @@ ggplot(data = fahrraddiebstahl_dauer_mehrere_tage_df, aes(x = Dauer)) +
 
 Mit diesem Kapitel der Datenanalyse sollen präferierte Tatzeiten herausgefunden werden.
 
-### Tabelle "Anzahl der Tatzeiten nach Stunde"
+### Absolute Anzahl der Anfänge der Tatzeiten nach Stunde
 
 ```{r}
 # Konvertiere `TATZEIT_ANFANG_STUNDE` in numerisch, um Fehler mit NA-Werten zu vermeiden
@@ -264,52 +266,218 @@ stunden_anzahl <- fahrraddiebstahl_datensatz_df %>%
   group_by(TATZEIT_STUNDE_ANZAHL) %>%
   summarise(Anzahl = n())
 
-# Ergebnisse anzeigen
-print(stunden_anzahl)
-```
-
-### Balkendiagramm"Anzahl der Tatzeiten nach Stunde"
-
-```{r}
 # Plot als Balkendiagramm
 ggplot(stunden_anzahl, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anzahl)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   labs(
-    title = "Fälle von Fahrraddiebstählen je Stunde",
+    title = "Absolute Anzahl der Anfänge von Fahrraddiebstählen je Stunde",
     x = "Stunde des Tages",
     y = "Anzahl der Fälle"
   ) +
   theme_minimal()
+
+# Ergebnisse anzeigen
+print(stunden_anzahl)
 ```
 
-## Anzahl der Tatzeiten nach Tag
+### Absolute Anzahl der Endzeiten der Diebstähle nach Stunde
 
 ```{r}
-# Konvertiere `TATZEIT_ANFANG_DATUM` in ein Datum-Format (falls noch nicht geschehen)
-fahrraddiebstahl_datensatz_df$TATZEIT_DATUM_ANZAHL <- as.Date(fahrraddiebstahl_datensatz_df$TATZEIT_ANFANG_DATUM, format = "%d.%m.%Y")
+# Konvertiere `TATZEIT_ANFANG_STUNDE` in numerisch, um Fehler mit NA-Werten zu vermeiden
+fahrraddiebstahl_datensatz_df$TATZEIT_STUNDE_ANZAHL <- as.numeric(fahrraddiebstahl_datensatz_df$TATZEIT_ANFANG_STUNDE)
 
-# Gruppiere nach `TATZEIT_DATUM_ANZAHL` und zähle die Anzahl der Fälle je Datum
+# Gruppiere nach `TATZEIT_ANFANG_STUNDE` und zähle die Anzahl der Fälle je Stunde
 library(dplyr)
 
+stunden_anzahl <- fahrraddiebstahl_datensatz_df %>%
+  filter(!is.na(TATZEIT_STUNDE_ANZAHL)) %>% # NA-Werte entfernen
+  group_by(TATZEIT_STUNDE_ANZAHL) %>%
+  summarise(Anzahl = n())
+
+# Plot als Balkendiagramm
+ggplot(stunden_anzahl, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anzahl)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(
+    title = "Absolute Anzahl der Anfänge von Fahrraddiebstählen je Stunde",
+    x = "Stunde des Tages",
+    y = "Anzahl der Fälle"
+  ) +
+  theme_minimal()
+
+# Ergebnisse anzeigen
+print(stunden_anzahl)
+```
+Dabei ist abzuwägen, was "Anfang des Fahrraddiebstahls" bedeutet. Die Personen, die die Fälle gemeldet haben, werden vermutlich dort das Rad zuletzt gesehen haben.
+
+## Anzahl der Tatzeiten je Tag/Monat
+Diese Kapitel analysiert die Anzahlen der Diebstähle an den unterschiedlichen Tagen und Monaten. Dabei wird das Datum genommen, in dem das Fahrrad sicher gestohlen ist, also die Einträge aus "TATZEIT_ENDE_DATUM".
+
+### Präparation des Datensatzen
+
+```{r}
+# Konvertiere `TATZEIT_ANFANG_DATUM` in ein Datum-Format und extrahiere den Monat
+library(dplyr)
+library(lubridate) # Für Datumsfunktionen
+
+# Annahme: fahrraddiebstahl_datensatz_df enthält eine Spalte `TATZEIT_ANFANG_DATUM` im Format "%d.%m.%Y"
+fahrraddiebstahl_datensatz_df <- fahrraddiebstahl_datensatz_df %>%
+  mutate(
+    TATZEIT_DATUM_ANZAHL = as.Date(TATZEIT_ENDE_DATUM, format = "%d.%m.%Y"), # Konvertierung zu Datum
+    Monat = month(TATZEIT_DATUM_ANZAHL, label = TRUE, abbr = TRUE) # Extrahiere den Monat
+  )
+
+# Gruppiere nach `TATZEIT_DATUM_ANZAHL` und zähle die Anzahl der Fälle je Datum
 datum_anzahl <- fahrraddiebstahl_datensatz_df %>%
   filter(!is.na(TATZEIT_DATUM_ANZAHL)) %>% # NA-Werte entfernen
-  group_by(TATZEIT_DATUM_ANZAHL) %>%
-  summarise(Anzahl = n())
+  group_by(TATZEIT_DATUM_ANZAHL, Monat) %>% # Gruppiere auch nach Monat
+  summarise(Anzahl = n(), .groups = "drop")
 
 # Ergebnisse anzeigen
 print(datum_anzahl)
 ```
-
+### Anzahl der Fälle von Fahrraddiebstählen nach Tag
 ```{r}
 library(ggplot2)
-
-# Plot als Balkendiagramm
-ggplot(datum_anzahl, aes(x = TATZEIT_DATUM_ANZAHL, y = Anzahl)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
+# Plot mit unterschiedlichen Farben für die Monate
+ggplot(datum_anzahl, aes(x = TATZEIT_DATUM_ANZAHL, y = Anzahl, fill = Monat)) +
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette = "Set3") + # Farbpalette wählen
   labs(
     title = "Fälle von Fahrraddiebstählen je Datum",
     x = "Datum",
-    y = "Anzahl der Fälle"
+    y = "Anzahl der Fälle",
+    fill = "Monat"
+  ) +
+  theme_minimal()
+```
+
+### Absolute Anzahl der Diebstähle je Wochentag + Monat
+```{r}
+library(dplyr)
+library(lubridate) # Für Datumsfunktionen
+library(ggplot2) # Für das Plotten
+
+# Annahme: fahrraddiebstahl_datensatz_df enthält eine Spalte `TATZEIT_ANFANG_DATUM` im Format "%d.%m.%Y"
+fahrraddiebstahl_datensatz_df <- fahrraddiebstahl_datensatz_df %>%
+  mutate(
+    TATZEIT_DATUM_ANZAHL = as.Date(TATZEIT_ANFANG_DATUM, format = "%d.%m.%Y"), # Konvertierung zu Datum
+    Monat = month(TATZEIT_DATUM_ANZAHL, label = TRUE, abbr = TRUE), # Extrahiere den Monat
+    Wochentag = wday(TATZEIT_DATUM_ANZAHL, label = TRUE) # Extrahiere den Wochentag
+  )
+
+# Gruppiere nach `Wochentag` und `Monat` und zähle die Anzahl der Fälle je Wochentag und Monat
+wochentag_monat_anzahl <- fahrraddiebstahl_datensatz_df %>%
+  filter(!is.na(TATZEIT_DATUM_ANZAHL)) %>% # Filtere NA-Werte
+  group_by(Wochentag, Monat) %>% # Gruppiere nach Wochentag und Monat
+  summarise(Anzahl = n(), .groups = "drop")
+
+# Erstelle das Plot
+ggplot(wochentag_monat_anzahl, aes(x = Wochentag, y = Anzahl, fill = Monat)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Anzahl der Fahrraddiebstähle pro Wochentag und Monat",
+    x = "Wochentag",
+    y = "Anzahl der Diebstähle",
+    fill = "Monat"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+print(wochentag_monat_anzahl)
+```
+
+### Durchschnittliche Anzahl der Diebstähle nach Wochentag
+```{r}
+fahrraddiebstahl_datensatz_df <- fahrraddiebstahl_datensatz_df %>%
+  mutate(
+    TATZEIT_DATUM_ANZAHL = as.Date(TATZEIT_ANFANG_DATUM, format = "%d.%m.%Y"), # Konvertierung zu Datum
+    Wochentag = wday(TATZEIT_DATUM_ANZAHL, label = TRUE) # Extrahiere den Wochentag
+  )
+
+# Gruppiere nach `Wochentag` und zähle die Anzahl der Fälle je Wochentag über alle Monate hinweg
+wochentag_anzahl <- fahrraddiebstahl_datensatz_df %>%
+  filter(!is.na(TATZEIT_DATUM_ANZAHL)) %>% # Filtere NA-Werte
+  group_by(Wochentag) %>% # Gruppiere nur nach Wochentag
+  summarise(Anzahl = n(), .groups = "drop")
+
+# Berechne die durchschnittliche Anzahl der Diebstähle pro Wochentag
+durchschnitt_wochentag <- wochentag_anzahl %>%
+  mutate(Durchschnitt = Anzahl) # Berechne den Durchschnitt pro Wochentag
+
+# Erstelle das Plot
+ggplot(wochentag_anzahl, aes(x = Wochentag, y = Anzahl, fill = Wochentag)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Anzahl der Fahrraddiebstähle pro Wochentag (alle Monate)",
+    x = "Wochentag",
+    y = "Anzahl der Diebstähle"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Ergebnisse anzeigen
+print(durchschnitt_wochentag)
+```
+
+
+### Anzahl der Fälle von Fahrraddiebstählen nach Monat+Jahr
+
+```{r}
+# Jahr und Monat extrahieren
+fahrraddiebstahl_datensatz_df <- fahrraddiebstahl_datensatz_df %>%
+  mutate(
+    Jahr = year(TATZEIT_DATUM_ANZAHL),          # Extrahiere das Jahr
+    Monat = month(TATZEIT_DATUM_ANZAHL, label = TRUE, abbr = TRUE) # Extrahiere den Monat
+  )
+
+# Daten nach Monat und Jahr aggregieren
+monat_jahr_anzahl <- fahrraddiebstahl_datensatz_df %>%
+  filter(!is.na(TATZEIT_DATUM_ANZAHL)) %>%
+  group_by(Jahr, Monat) %>%
+  summarise(Anzahl = n(), .groups = "drop")
+
+# Plot erstellen
+ggplot(monat_jahr_anzahl, aes(x = Monat, y = Anzahl, fill = factor(Jahr))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_brewer(palette = "Set1") + # Farbpalette für Jahre
+  labs(
+    title = "Fälle von Fahrraddiebstählen je Monat und Jahr",
+    x = "Monat",
+    y = "Anzahl der Fälle",
+    fill = "Jahr"
+  ) +
+  theme_minimal()
+
+```
+In dem Balkendiagramm wird ersichtlich, dass die Fahrradiebstähle im Jahr 2024 in den Monaten Januar bis September geringer ausfallen. Die Einzeige Ausnahme stellt der Monat Mai dar.  
+
+
+### Durchschnittliche Anzahl der Fälle von Fahrraddiebstählen nach Monat
+In diesem Unterkapitel wird die Durchschnittliche Anzahl der Monate gezeigt. Da der Datensatz aus zwei Jahren besteht, werden die Anzähle durch zwei dividiert. Die Monate Oktober, November sowie Dezember bilden dabei eine Ausnahme, da im Jahr 2024 die Daten nur bis einschließlich 18.Oktober.2024 vorhanden sind.
+
+```{r}
+# Monatsspezifische Anpassungen der Anzahl
+monat_anzahl <- fahrraddiebstahl_datensatz_df %>%
+  filter(!is.na(TATZEIT_DATUM_ANZAHL)) %>%
+  group_by(Monat) %>%
+  summarise(Anzahl = n(), .groups = "drop")
+
+# Halbiere die Anzahl der Fälle für Januar bis Oktober, da die ANzahl aus zwei Jahr zustande kommt
+monat_anzahl <- monat_anzahl %>%
+  mutate(Anzahl = case_when(
+    Monat %in% c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct") ~ 
+      ifelse(Monat == "Oct", Anzahl / (1 + 18 / 31), Anzahl / 2),
+    TRUE ~ Anzahl
+  ))
+
+# Plot nur für Monate
+ggplot(monat_anzahl, aes(x = Monat, y = Anzahl, fill = Monat)) +
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette = "Set3") +
+  labs(
+    title = "Fälle von Fahrraddiebstählen je Monat",
+    x = "Monat",
+    y = "Anzahl der Fälle",
+    fill = "Monat"
   ) +
   theme_minimal()
 ```
