@@ -7,7 +7,8 @@ output:
   pdf_document: default
 ---
 
-# Data Science Exam, Fahrraddiebstahl in Berlin 2023 - 2024
+## Vorkonfigurationen
+
 ```{r}
 # Load the necessary libraries
 library(readxl)
@@ -19,7 +20,7 @@ library(xml2)
 library(lubridate)
 ```
 
-### Datensatz laden
+# Datensatz laden
 
 ```{r}
 # Load the CSV dataset with ISO-8859-1 encoding
@@ -29,10 +30,6 @@ fahrraddiebstahl_datensatz <- read.csv("20.1 Stuttgart - Fahrraddiebstahl 2023+2
 
 # Load the Excel dataset
 lor_datensatz <- read_excel("20.1 Stuttgart - Fahrraddiebstahl 2023+2024 Berlin/LOR-Räume mit Kontextindikatoren.xlsx")
-
-# Check the first few rows of the imported data
-head(fahrraddiebstahl_datensatz)
-head(lor_datensatz)
 ```
 
 Konnvertiere den Datensatz in einen Dataframe
@@ -45,18 +42,20 @@ fahrraddiebstahl_datensatz_df <- data.frame(fahrraddiebstahl_datensatz)
 str(fahrraddiebstahl_datensatz)
 ```
 
-## Anzahl der Diebstähle Absolut
+# Anzahl der Diebstähle
 
 Aufgabenstellung: Beschreiben Sie die Anzahl der Diebstähle absolut
 
-Verteilungs (Versuchter Raub/Erfolreicher Raub/Unbekannt)
+## Absolute Anzahl
+
+### Verteilungs (Versuchter Raub/Erfolreicher Raub/Unbekannt)
 
 ```{r}
 tabelle_versuche <- table(fahrraddiebstahl_datensatz['VERSUCH'])
 print(tabelle_versuche)
 ```
 
-Anzahl Vorfälle insgesamt
+### Anzahl Vorfälle insgesamt
 
 ```{r}
 anzahl_fälle <- nrow(fahrraddiebstahl_datensatz)
@@ -147,7 +146,7 @@ berlin_map_bezirk <- berlin_map %>%
 ```{r}
 # Plot erstellen, Karte ohne Planungsraum
 # Basis-Karte erstellen
-p <- ggplot(data = berlin_map_bezirksregion) +
+p_reg <- ggplot(data = berlin_map_bezirksregion) +
   geom_sf(aes(
     fill = anzahl_bezirksregion,
     text = paste0("Bezirksregion: ", BZR_NAME, "<br>Fälle: ", anzahl_bezirksregion)
@@ -161,14 +160,17 @@ p <- ggplot(data = berlin_map_bezirksregion) +
   )
 
 # Interaktive Karte mit Plotly
-interactive_map <- ggplotly(p, tooltip = "text")
+interactive_map_reg <- ggplotly(p_reg, tooltip = "text")
 
 # Zeige die interaktive Karte
-interactive_map
+interactive_map_reg
 
-# Plot erstellen, Karte nur Bezirk
-ggplot(data = berlin_map_bezirk) +
-  geom_sf(aes(fill = anzahl_bezirk), color = "black") +
+# Interaktive Karte nur Bezirk
+p_bez <- ggplot(data = berlin_map_bezirk) +
+  geom_sf(aes(
+    fill = anzahl_bezirk,
+    text = paste0("Bezirk: ", BEZ, "<br>Fälle: ", anzahl_bezirk)
+  ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
   theme_minimal() +
   labs(
@@ -176,9 +178,15 @@ ggplot(data = berlin_map_bezirk) +
     subtitle = "Anzahl der Fälle pro Bezirk",
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
+
+# Interaktive Version der Karte
+interactive_map_bez <- ggplotly(p_bez, tooltip = "text")
+
+# Zeige die interaktive Karte
+interactive_map_bez
 ```
 
-### Tabellenansicht und Balkendiagram der Absoluten Diebstähle im Bezug zu den Geodaten
+### Tabellenansicht und Balkendiagram der absoluten Anzahl an Diebstählen im Bezug zu den Geodaten
 
 #### Bezirksregion
 
@@ -192,32 +200,36 @@ berlin_map_bezirksregion$BZR_NAME <- factor(berlin_map_bezirksregion$BZR_NAME,
                                             levels = berlin_map_bezirksregion$BZR_NAME[order(berlin_map_bezirksregion$anzahl_bezirksregion)])
 
 # Aufgeteilter Plot Bezirksregion
-split_data_bezirksregion <- split(berlin_map_bezirksregion, cut(1:nrow(berlin_map_bezirksregion), breaks = 5, labels = FALSE))
+split_data_bezirksregion <- split(berlin_map_bezirksregion, cut(1:nrow(berlin_map_bezirksregion), breaks = 3, labels = FALSE))
 
 # Bestimme den minimalen und maximalen Wert von anzahl_bezirksregion für den gesamten Datensatz
 min_val <- min(berlin_map_bezirksregion$anzahl_bezirksregion, na.rm = TRUE)
 max_val <- max(berlin_map_bezirksregion$anzahl_bezirksregion, na.rm = TRUE)
 
-# Erstelle die Diagramme mit einem durchgehenden Farbverlauf
-plots_bezirksregion_anzahl <- lapply(1:5, function(i) {
-  ggplot(split_data_bezirksregion[[i]], aes(x = BZR_NAME, y = anzahl_bezirksregion, fill = anzahl_bezirksregion)) +
-    geom_bar(stat = "identity") +
-    scale_fill_gradient(low = "cyan4", high = "chartreuse3", limits = c(min_val, max_val)) +  # Farbverlauf über alle Plots hinweg
-    labs(
-      title = paste("Absolute Anzahl der Fahrraddiebstähle je Bezirksregion (Teil", i, ")"),
-      x = "Bezirksregion",
-      y = "Anzahl der Fälle"
-    ) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# Aufgeteilter Plot mit interaktiven Diagrammen
+interactive_plots_bezirksregion_anzahl <- lapply(1:3, function(i) {
+  ggplotly(
+    ggplot(split_data_bezirksregion[[i]], aes(x = BZR_NAME, y = anzahl_bezirksregion, fill = anzahl_bezirksregion, 
+                                              text = paste("Bezirksregion: ", BZR_NAME, "<br>Fälle: ", anzahl_bezirksregion))) +
+      geom_bar(stat = "identity") +
+      scale_fill_gradient(low = "blue", high = "red", limits = c(min_val, max_val)) +
+      labs(
+        title = paste("Absolute Anzahl der Fahrraddiebstähle je Bezirksregion (Teil", i, ")"),
+        x = NULL,  # Entfernt die Beschriftung der x-Achse
+        y = "Anzahl der Fälle"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_blank(),  # Entfernt die x-Achsen-Beschriftung
+            axis.ticks.x = element_blank()) # Entfernt die x-Achsen-Ticks
+    ,
+    tooltip = "text"
+  )
 })
 
 # Ergebnisse anzeigen
-print(plots_bezirksregion_anzahl[[1]])
-print(plots_bezirksregion_anzahl[[2]])
-print(plots_bezirksregion_anzahl[[3]])
-print(plots_bezirksregion_anzahl[[4]])
-print(plots_bezirksregion_anzahl[[5]])
+interactive_plots_bezirksregion_anzahl[[1]]
+interactive_plots_bezirksregion_anzahl[[2]]
+interactive_plots_bezirksregion_anzahl[[3]]
 ```
 
 #### Bezirk
@@ -236,7 +248,7 @@ berlin_map_bezirk$BEZ <- factor(berlin_map_bezirk$BEZ, levels = berlin_map_bezir
 # Erstelle das Plot mit Farbverlauf
 ggplot(berlin_map_bezirk, aes(x = BEZ, y = anzahl_bezirk, fill = anzahl_bezirk)) +
   geom_bar(stat = "identity", position = "dodge") +
-  scale_fill_gradient(low = "cyan4", high = "chartreuse3") +  # Farbverlauf
+  scale_fill_gradient(low = "blue", high = "red") +  # Farbverlauf
   labs(
     title = "Absolute Anzahl der Fahrraddiebstähle je Bezirk",
     x = "Bezirksregion",
@@ -246,7 +258,11 @@ ggplot(berlin_map_bezirk, aes(x = BEZ, y = anzahl_bezirk, fill = anzahl_bezirk))
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-## Durchschnittliche Fahrraddiebstähle (Absolute Anzahl Fahrraddiebstähle / Einwohner)
+## Durchschnittliche Fahrraddiebstähle
+
+Der Durchschnitt berechnet sich aus der absoluten Anzahl an Fahrraddiebstähle geteilt durch die Einwohnerzahl aus der Datei "LOR-Räume mit Kontextindikatoren"
+
+### Präparation Durchschnitt der Fahrradiebstähle
 
 ```{r}
 # Betriebsregion
@@ -303,10 +319,18 @@ berlin_map_durchschnitt_bezirk <- berlin_map %>%
   left_join(lor_durchschnitt_bezirk, by = c("BEZ" = "LOR"))
 ```
 
+### Kartengrafiken zu den durchschnittlichen Fahrradiebstählen
+
 ```{r}
-# Plot erstellen, Karte ohne Planungsraum
-ggplot(data = berlin_map_durschnitt_bezirksregion) +
-  geom_sf(aes(fill = durchschnitt_promille), color = "black") +
+# Interaktive Karte: Bezirksregionen
+p_bezirksregion <- ggplot(data = berlin_map_durschnitt_bezirksregion) +
+  geom_sf(aes(
+    fill = durchschnitt_promille,
+    text = paste0(
+      "Bezirksregion: ", BZR_NAME, 
+      "<br>Durchschnitt (Promille): ", round(durchschnitt_promille, 2)
+    )
+  ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
   theme_minimal() +
   labs(
@@ -315,9 +339,21 @@ ggplot(data = berlin_map_durschnitt_bezirksregion) +
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
-# Plot erstellen, Karte nur Bezirk
-ggplot(data = berlin_map_durchschnitt_bezirk) +
-  geom_sf(aes(fill = durchschnitt_promille), color = "black") +
+# Interaktive Version
+interactive_map_bezirksregion <- ggplotly(p_bezirksregion, tooltip = "text")
+
+# Zeige die interaktive Karte
+interactive_map_bezirksregion
+
+# Interaktive Karte: Bezirke
+p_bezirk <- ggplot(data = berlin_map_durchschnitt_bezirk) +
+  geom_sf(aes(
+    fill = durchschnitt_promille,
+    text = paste0(
+      "Bezirk: ", BEZ, 
+      "<br>Durchschnitt (Promille): ", round(durchschnitt_promille, 2)
+    )
+  ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
   theme_minimal() +
   labs(
@@ -325,8 +361,15 @@ ggplot(data = berlin_map_durchschnitt_bezirk) +
     subtitle = "Anzahl der Fälle / Anzahl der Einwohner pro Bezirk, in Promille",
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
+
+# Interaktive Version
+interactive_map_bezirk <- ggplotly(p_bezirk, tooltip = "text")
+
+# Zeige die interaktive Karte
+interactive_map_bezirk
 ```
-### Tabelle und Balkendiagramm des Durchschnitts, Bezirksregionen
+
+### Tabellenansicht und Balkendiagram der durchschnittlichen Diebstähle im Bezug zu den Geodaten
 
 ```{r}
 # Bezirksregionen
@@ -340,17 +383,25 @@ berlin_map_durschnitt_bezirksregion$BZR_NAME <- factor(berlin_map_durschnitt_bez
                                                        levels = berlin_map_durschnitt_bezirksregion$BZR_NAME[order(berlin_map_durschnitt_bezirksregion$durchschnitt_promille)])
 
 # Aufgeteilter Plot Bezirksregion
-split_data_bezirksregion_durchschnitt <- split(berlin_map_durschnitt_bezirksregion, cut(1:nrow(berlin_map_durschnitt_bezirksregion), breaks = 5, labels = FALSE))
+split_data_bezirksregion_durchschnitt <- split(berlin_map_durschnitt_bezirksregion, cut(1:nrow(berlin_map_durschnitt_bezirksregion), breaks = 3, labels = FALSE))
 
 # Bestimme den minimalen und maximalen Wert von 'durchschnitt_promille' für den gesamten Datensatz
 min_val <- min(berlin_map_durschnitt_bezirksregion$durchschnitt_promille, na.rm = TRUE)
 max_val <- max(berlin_map_durschnitt_bezirksregion$durchschnitt_promille, na.rm = TRUE)
 
-# Erstelle die Diagramme mit einem durchgehenden Farbverlauf
-plots_bezirksregion_durchschnitt <- lapply(1:5, function(i) {
-  ggplot(split_data_bezirksregion_durchschnitt[[i]], aes(x = BZR_NAME, y = durchschnitt_promille, fill = durchschnitt_promille)) +
+# Interaktive Diagramme mit ggplotly
+interactive_plots_bezirksregion_durchschnitt <- lapply(1:3, function(i) {
+  p <- ggplot(split_data_bezirksregion_durchschnitt[[i]], aes(
+      x = BZR_NAME, 
+      y = durchschnitt_promille, 
+      fill = durchschnitt_promille, 
+      text = paste0(
+        "Bezirksregion: ", BZR_NAME, 
+        "<br>Durchschnitt (Promille): ", round(durchschnitt_promille, 4)
+      )
+    )) +
     geom_bar(stat = "identity") +
-    scale_fill_gradient(low = "cyan4", high = "chartreuse3", limits = c(min_val, max_val)) +  # Farbverlauf über alle Plots hinweg
+    scale_fill_gradient(low = "blue", high = "red", limits = c(min_val, max_val)) +  # Farbverlauf über alle Plots hinweg
     labs(
       title = paste("Durchschnitt in Promille je Bezirksregion (Teil", i, ")"),
       x = "Bezirksregion",
@@ -358,14 +409,15 @@ plots_bezirksregion_durchschnitt <- lapply(1:5, function(i) {
     ) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  # Konvertiere ggplot-Objekt zu einer interaktiven Version
+  ggplotly(p, tooltip = "text")
 })
 
 # Ergebnisse anzeigen
-print(plots_bezirksregion_durchschnitt[[1]])
-print(plots_bezirksregion_durchschnitt[[2]])
-print(plots_bezirksregion_durchschnitt[[3]])
-print(plots_bezirksregion_durchschnitt[[4]])
-print(plots_bezirksregion_durchschnitt[[5]])
+print(interactive_plots_bezirksregion_durchschnitt[[1]])
+print(interactive_plots_bezirksregion_durchschnitt[[2]])
+print(interactive_plots_bezirksregion_durchschnitt[[3]])
 ```
 
 ### Tabelle und Balkendiagramm des Durchschnitts, Bezirke
@@ -385,7 +437,7 @@ berlin_map_durchschnitt_bezirk$BEZ <- factor(berlin_map_durchschnitt_bezirk$BEZ,
 # Erstelle das Plot mit Farbverlauf
 ggplot(berlin_map_durchschnitt_bezirk, aes(x = BEZ, y = durchschnitt_promille, fill = durchschnitt_promille)) +
   geom_bar(stat = "identity", position = "dodge") +
-  scale_fill_gradient(low = "cyan4", high = "chartreuse3") +  # Farbverlauf
+  scale_fill_gradient(low = "blue", high = "red") +  # Farbverlauf
   labs(
     title = "Durchschnitt der Fahrraddiebstähle je Bezirk",
     x = "Bezirk",
@@ -525,27 +577,51 @@ berlin_map_schadenshöhe_durchschnitt_bezirk <- berlin_map %>%
 ### Visualisierung der absoluten Schadenshöhe in einer Karte & Tabelle
 
 ```{r}
-# Plot erstellen, Karte ohne Planungsraum
-ggplot(data = berlin_map_schadenshöhe_bezirksregion) +
-  geom_sf(aes(fill = SCHADENSHOEHE_SUMME), color = "black") +
-  scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
+# Interaktive Karte: Bezirksregionen
+p_schadenshoehe_bezirksregion <- ggplot(data = berlin_map_schadenshöhe_bezirksregion) +
+  geom_sf(aes(
+    fill = SCHADENSHOEHE_SUMME,
+    text = paste0(
+      "Bezirksregion: ", BZR_NAME,
+      "<br>Schadenshöhe: ", scales::comma(SCHADENSHOEHE_SUMME), " €"
+    )
+  ), color = "black") +
+  scale_fill_gradient(low = "blue", high = "red", name = "Schadenshöhe (€)", na.value = "grey") +
   theme_minimal() +
   labs(
-    title = "Absolute Anzahl an Fahrraddiebstähle in Berlin:   Bezirksregion",
-    subtitle = "Anzahl der Fälle pro Bezirksregion",
+    title = "Absolute Schadenshöhe bei Fahrraddiebstählen in Berlin: Bezirksregion",
+    subtitle = "Schadenshöhe in Euro pro Bezirksregion",
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
-# Plot erstellen, Karte nur Bezirk
-ggplot(data = berlin_map_schadenshöhe_bezirk) +
-  geom_sf(aes(fill = SCHADENSHOEHE_SUMME), color = "black") +
-  scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
+# Interaktive Version
+interactive_map_schadenshoehe_bezirksregion <- ggplotly(p_schadenshoehe_bezirksregion, tooltip = "text")
+
+# Zeige die interaktive Karte
+interactive_map_schadenshoehe_bezirksregion
+
+# Interaktive Karte: Bezirke
+p_schadenshoehe_bezirk <- ggplot(data = berlin_map_schadenshöhe_bezirk) +
+  geom_sf(aes(
+    fill = SCHADENSHOEHE_SUMME,
+    text = paste0(
+      "Bezirk: ", BEZ,
+      "<br>Schadenshöhe: ", scales::comma(SCHADENSHOEHE_SUMME), " €"
+    )
+  ), color = "black") +
+  scale_fill_gradient(low = "blue", high = "red", name = "Schadenshöhe (€)", na.value = "grey") +
   theme_minimal() +
   labs(
-    title = "Absolute Schadenshöhe in Berlin: Bezirk",
-    subtitle = "Absolute Schadenshöhe pro Bezirk",
+    title = "Absolute Schadenshöhe bei Fahrraddiebstählen in Berlin: Bezirk",
+    subtitle = "Schadenshöhe in Euro pro Bezirk",
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
+
+# Interaktive Version
+interactive_map_schadenshoehe_bezirk <- ggplotly(p_schadenshoehe_bezirk, tooltip = "text")
+
+# Zeige die interaktive Karte
+interactive_map_schadenshoehe_bezirk
 ```
 
 ```{r}
@@ -592,20 +668,51 @@ ggplot(data = berlin_map_schadenshöhe_durchschnitt_bezirk) +
 ```
 
 ```{r}
-# Bezirksregionen
-berlin_map_schadenshöhe_durschnitt_bezirksregion %>%
-  select(BZR_NAME, BZR_ID, SCHADENSHOEHE_DURCHSCHNITT) %>%
-  st_drop_geometry() %>%  # Entfernt die Geometrie-Daten
-   arrange(desc(SCHADENSHOEHE_DURCHSCHNITT)) %>%  # Sortiert in absteigender Reihenfolge
-  show()
+# Interaktive Karte: Bezirksregionen
+p_schadenshoehe_durchschnitt_bezirksregion <- ggplot(data = berlin_map_schadenshöhe_durschnitt_bezirksregion) +
+  geom_sf(aes(
+    fill = SCHADENSHOEHE_DURCHSCHNITT,
+    text = paste0(
+      "Bezirksregion: ", BZR_NAME, 
+      "<br>Durchschnittliche Schadenshöhe: ", scales::comma(round(SCHADENSHOEHE_DURCHSCHNITT, 2)), " €"
+    )
+  ), color = "black") +
+  scale_fill_gradient(low = "blue", high = "red", name = "Durchschnitt (€)", na.value = "grey") +
+  theme_minimal() +
+  labs(
+    title = "Durchschnitt der Schadenshöhe von Fahrraddiebstählen in Berlin: Bezirksregion",
+    subtitle = "Durchschnitt: Schadenshöhe / Anzahl der Einwohner pro Bezirksregion",
+    caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
+  )
 
-# Bezirke
-berlin_map_schadenshöhe_durchschnitt_bezirk %>%
-  select(BEZ, SCHADENSHOEHE_DURCHSCHNITT) %>%
-  st_drop_geometry() %>%  # Entfernt die Geometrie-Daten
-   distinct(BEZ, .keep_all = TRUE) %>%  # Entfernt Duplikate basierend auf 'BEZ'
-   arrange(desc(SCHADENSHOEHE_DURCHSCHNITT)) %>%  # Sortiert in absteigender Reihenfolge
-  show()
+# Interaktive Version
+interactive_map_schadenshoehe_durchschnitt_bezirksregion <- ggplotly(p_schadenshoehe_durchschnitt_bezirksregion, tooltip = "text")
+
+# Zeige die interaktive Karte
+interactive_map_schadenshoehe_durchschnitt_bezirksregion
+
+# Interaktive Karte: Bezirke
+p_schadenshoehe_durchschnitt_bezirk <- ggplot(data = berlin_map_schadenshöhe_durchschnitt_bezirk) +
+  geom_sf(aes(
+    fill = SCHADENSHOEHE_DURCHSCHNITT,
+    text = paste0(
+      "Bezirk: ", BEZ, 
+      "<br>Durchschnittliche Schadenshöhe: ", scales::comma(round(SCHADENSHOEHE_DURCHSCHNITT, 2)), " €"
+    )
+  ), color = "black") +
+  scale_fill_gradient(low = "blue", high = "red", name = "Durchschnitt (€)", na.value = "grey") +
+  theme_minimal() +
+  labs(
+    title = "Durchschnitt der Schadenshöhe von Fahrraddiebstählen in Berlin: Bezirk",
+    subtitle = "Durchschnitt: Schadenshöhe / Anzahl der Einwohner pro Bezirk",
+    caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
+  )
+
+# Interaktive Version
+interactive_map_schadenshoehe_durchschnitt_bezirk <- ggplotly(p_schadenshoehe_durchschnitt_bezirk, tooltip = "text")
+
+# Zeige die interaktive Karte
+interactive_map_schadenshoehe_durchschnitt_bezirk
 ```
 
 # Analyse der Diebstähle nach Tagzeiten
@@ -693,7 +800,7 @@ library(ggplot2)
 
 # Tagsüber
 ggplot(data = fahrraddiebstahl_dauer_tagsüber_df, aes(x = Dauer)) +
-  geom_bar(fill = "steelblue") +
+  geom_bar(fill = "cyan4") +
   labs(
     title = "Verteilung der Diebstahldauer tagsüber",
     x = "Dauer (Stunden)",
@@ -705,7 +812,7 @@ ggplot(data = fahrraddiebstahl_dauer_tagsüber_df, aes(x = Dauer)) +
 
 # Nachts
 ggplot(data = fahrraddiebstahl_dauer_nachts_df, aes(x = Dauer)) +
-  geom_bar(fill = "steelblue") +
+  geom_bar(fill = "cyan4") +
   labs(
     title = "Verteilung der Diebstahldauer nachts",
     x = "Dauer (Stunden)",
@@ -717,7 +824,7 @@ ggplot(data = fahrraddiebstahl_dauer_nachts_df, aes(x = Dauer)) +
 
 # mehrere Tage
 ggplot(data = fahrraddiebstahl_dauer_mehrere_tage_df, aes(x = Dauer)) +
-  geom_bar(fill = "steelblue") +
+  geom_bar(fill = "cyan4") +
   labs(
     title = "Verteilung der Diebstahldauer mehrere Tage",
     x = "Dauer (Stunden)",
@@ -735,20 +842,26 @@ Mit diesem Kapitel der Datenanalyse sollen präferierte Tatzeiten herausgefunden
 ### Absolute Anzahl der Anfänge der Tatzeiten nach Stunde
 
 ```{r}
+fahrraddiebstahl_anzahl_df <- fahrraddiebstahl_datensatz_df
+
+# Convert `TATZEIT_ANFANG_STUNDE` to numeric to avoid NA errors
+fahrraddiebstahl_anzahl_df$TATZEIT_STUNDE_ANZAHL <- as.numeric(fahrraddiebstahl_anzahl_df$TATZEIT_ANFANG_STUNDE)
+
+
 # Konvertiere `TATZEIT_ANFANG_STUNDE` in numerisch, um Fehler mit NA-Werten zu vermeiden
-fahrraddiebstahl_datensatz_df$TATZEIT_STUNDE_ANZAHL <- as.numeric(fahrraddiebstahl_datensatz_df$TATZEIT_ANFANG_STUNDE)
+fahrraddiebstahl_anzahl_df$TATZEIT_STUNDE_ANZAHL <- as.numeric(fahrraddiebstahl_datensatz_df$TATZEIT_ANFANG_STUNDE)
 
 # Gruppiere nach `TATZEIT_ANFANG_STUNDE` und zähle die Anzahl der Fälle je Stunde
 library(dplyr)
 
-stunden_anzahl <- fahrraddiebstahl_datensatz_df %>%
+stunden_anzahl <- fahrraddiebstahl_anzahl_df %>%
   filter(!is.na(TATZEIT_STUNDE_ANZAHL)) %>% # NA-Werte entfernen
   group_by(TATZEIT_STUNDE_ANZAHL) %>%
   summarise(Anzahl = n())
 
 # Plot als Balkendiagramm
 ggplot(stunden_anzahl, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anzahl)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_bar(stat = "identity", fill = "cyan4") +
   labs(
     title = "Absolute Anzahl der Anfänge von Fahrraddiebstählen je Stunde",
     x = "Stunde des Tages",
@@ -756,39 +869,129 @@ ggplot(stunden_anzahl, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anzahl)) +
   ) +
   theme_minimal()
 
-# Ergebnisse anzeigen
-print(stunden_anzahl)
+# print(stunden_anzahl)
 ```
 
 ### Absolute Anzahl der Endzeiten der Diebstähle nach Stunde
 
 ```{r}
 # Konvertiere `TATZEIT_ANFANG_STUNDE` in numerisch, um Fehler mit NA-Werten zu vermeiden
-fahrraddiebstahl_datensatz_df$TATZEIT_STUNDE_ANZAHL <- as.numeric(fahrraddiebstahl_datensatz_df$TATZEIT_ANFANG_STUNDE)
+fahrraddiebstahl_anzahl_df$TATZEIT_STUNDE_ANZAHL <- as.numeric(fahrraddiebstahl_datensatz_df$TATZEIT_ENDE_STUNDE)
 
 # Gruppiere nach `TATZEIT_ANFANG_STUNDE` und zähle die Anzahl der Fälle je Stunde
 library(dplyr)
 
-stunden_anzahl <- fahrraddiebstahl_datensatz_df %>%
+stunden_anzahl <- fahrraddiebstahl_anzahl_df %>%
   filter(!is.na(TATZEIT_STUNDE_ANZAHL)) %>% # NA-Werte entfernen
   group_by(TATZEIT_STUNDE_ANZAHL) %>%
   summarise(Anzahl = n())
 
 # Plot als Balkendiagramm
 ggplot(stunden_anzahl, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anzahl)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_bar(stat = "identity", fill = "cyan4") +
   labs(
-    title = "Absolute Anzahl der Anfänge von Fahrraddiebstählen je Stunde",
+    title = "Absolute Anzahl der Enden von Fahrraddiebstählen je Stunde",
     x = "Stunde des Tages",
     y = "Anzahl der Fälle"
   ) +
   theme_minimal()
 
-# Ergebnisse anzeigen
-print(stunden_anzahl)
+# print(stunden_anzahl)
 ```
 
 Dabei ist abzuwägen, was "Anfang des Fahrraddiebstahls" bedeutet. Die Personen, die die Fälle gemeldet haben, werden vermutlich dort das Rad zuletzt gesehen haben.
+
+## Anzahl der Diebstähle nach Ort+Uhrzeit
+
+```{r}
+# Datensatz nach Bezirk und Stunde gruppieren, nur mit den ersten 6 Zeichen von LOR
+lor_zeit_anzahl <- fahrraddiebstahl_datensatz_df %>%
+  mutate(LOR = substr(LOR, 1, 6)) %>%  # Nur die ersten 6 Zeichen von LOR verwenden
+  group_by(LOR, TATZEIT_ANFANG_STUNDE) %>%
+  summarise(anzahl_diebstahl = n(), .groups = "drop") %>%
+  arrange(LOR, desc(anzahl_diebstahl))
+
+# Höchste und zweitmeiste Diebstähle pro LOR ermitteln
+lor_max_zeit <- lor_zeit_anzahl %>%
+  group_by(LOR) %>%
+  summarise(
+    max_anzahl = max(anzahl_diebstahl),
+    max_zeit = TATZEIT_ANFANG_STUNDE[which.max(anzahl_diebstahl)],
+    zweitmax_anzahl = sort(anzahl_diebstahl, decreasing = TRUE)[2],
+    zweitmax_zeit = TATZEIT_ANFANG_STUNDE[order(anzahl_diebstahl, decreasing = TRUE)][2],
+    .groups = "drop"
+  )
+
+# Zusammenführen der Fahrraddiebstahldaten mit den Bezirksdaten
+berlin_map_bezirksregion <- berlin_map %>%
+  left_join(lor_max_zeit, by = c("BZR_ID" = "LOR"))
+
+# Basis-Karte erstellen
+p_reg <- ggplot(data = berlin_map_bezirksregion) +
+  geom_sf(aes(
+    fill = factor(max_zeit),  # Farbe nach der Stunde mit den meisten Diebstählen
+    text = paste0("Bezirk: ", BZR_NAME, 
+                  "<br>Höchste Fälle um ", max_zeit, " Uhr: ", max_anzahl,
+                  "<br>Zweitmeiste Fälle um ", zweitmax_zeit, " Uhr: ", zweitmax_anzahl)
+  ), color = "black") +
+  scale_fill_viridis_d(name = "Uhrzeit") +  # Alternativ: Verwende das "viridis"-Farbschema
+  theme_minimal() +
+  labs(
+    title = "Fahrraddiebstähle in Berlin: Bezirke und Uhrzeiten",
+    subtitle = "Uhrzeit mit den meisten Diebstählen (Uhrzeit Anfang) pro Bezirk",
+    caption = "Quelle: Fahrraddiebstahl-Datensatz"
+  )
+
+# Interaktive Karte mit Plotly
+interactive_map_reg <- ggplotly(p_reg, tooltip = "text")
+# Zeige die interaktive Karte
+interactive_map_reg
+```
+
+```{r}
+# Datensatz nach Bezirk und Stunde gruppieren, nur mit den ersten 6 Zeichen von LOR
+lor_zeit_anzahl <- fahrraddiebstahl_datensatz_df %>%
+  mutate(LOR = substr(LOR, 1, 6)) %>%  # Nur die ersten 6 Zeichen von LOR verwenden
+  group_by(LOR, TATZEIT_ENDE_STUNDE) %>%
+  summarise(anzahl_diebstahl = n(), .groups = "drop") %>%
+  arrange(LOR, desc(anzahl_diebstahl))
+
+# Höchste und zweitmeiste Diebstähle pro LOR ermitteln
+lor_max_zeit <- lor_zeit_anzahl %>%
+  group_by(LOR) %>%
+  summarise(
+    max_anzahl = max(anzahl_diebstahl),
+    max_zeit = TATZEIT_ENDE_STUNDE[which.max(anzahl_diebstahl)],
+    zweitmax_anzahl = sort(anzahl_diebstahl, decreasing = TRUE)[2],
+    zweitmax_zeit = TATZEIT_ENDE_STUNDE[order(anzahl_diebstahl, decreasing = TRUE)][2],
+    .groups = "drop"
+  )
+
+# Zusammenführen der Fahrraddiebstahldaten mit den Bezirksdaten
+berlin_map_bezirksregion <- berlin_map %>%
+  left_join(lor_max_zeit, by = c("BZR_ID" = "LOR"))
+
+# Basis-Karte erstellen
+p_reg <- ggplot(data = berlin_map_bezirksregion) +
+  geom_sf(aes(
+    fill = factor(max_zeit),  # Farbe nach der Stunde mit den meisten Diebstählen
+    text = paste0("Bezirk: ", BZR_NAME, 
+                  "<br>Höchste Fälle um ", max_zeit, " Uhr: ", max_anzahl,
+                  "<br>Zweitmeiste Fälle um ", zweitmax_zeit, " Uhr: ", zweitmax_anzahl)
+  ), color = "black") +
+  scale_fill_viridis_d(name = "Uhrzeit") +  # Alternativ: Verwende das "viridis"-Farbschema
+  theme_minimal() +
+  labs(
+    title = "Fahrraddiebstähle in Berlin: Bezirke und Uhrzeiten",
+    subtitle = "Uhrzeit mit den meisten Diebstählen (Uhrzeit Ende) pro Bezirk",
+    caption = "Quelle: Fahrraddiebstahl-Datensatz"
+  )
+
+# Interaktive Karte mit Plotly
+interactive_map_reg_uhrzeit <- ggplotly(p_reg, tooltip = "text")
+# Zeige die interaktive Karte
+interactive_map_reg_uhrzeit
+```
 
 ## Anzahl der Tatzeiten je Tag/Monat
 
@@ -809,19 +1012,14 @@ datum_anzahl <- fahrraddiebstahl_datensatz_Anzahl_df %>%
   filter(!is.na(TATZEIT_DATUM_ANZAHL)) %>% # NA-Werte entfernen
   group_by(TATZEIT_DATUM_ANZAHL, Monat) %>% # Gruppiere auch nach Monat
   summarise(Anzahl = n(), .groups = "drop")
-
-# Ergebnisse anzeigen
-print(datum_anzahl)
 ```
 
 ### Anzahl der Fälle von Fahrraddiebstählen nach Tag
 
 ```{r}
-library(ggplot2)
 # Plot mit unterschiedlichen Farben für die Monate
 ggplot(datum_anzahl, aes(x = TATZEIT_DATUM_ANZAHL, y = Anzahl, fill = Monat)) +
   geom_bar(stat = "identity") +
-  scale_fill_brewer(palette = "Set3") + # Farbpalette wählen
   labs(
     title = "Fälle von Fahrraddiebstählen je Datum",
     x = "Datum",
@@ -834,11 +1032,6 @@ ggplot(datum_anzahl, aes(x = TATZEIT_DATUM_ANZAHL, y = Anzahl, fill = Monat)) +
 ### Absolute Anzahl der Diebstähle je Wochentag + Monat
 
 ```{r}
-library(dplyr)
-library(lubridate) # Für Datumsfunktionen
-library(ggplot2) # Für das Plotten
-
-# Annahme: fahrraddiebstahl_datensatz_df enthält eine Spalte `TATZEIT_ANFANG_DATUM` im Format "%d.%m.%Y"
 fahrraddiebstahl_datensatz_df <- fahrraddiebstahl_datensatz_df %>%
   mutate(
     TATZEIT_DATUM_ANZAHL = as.Date(TATZEIT_ANFANG_DATUM, format = "%d.%m.%Y"), # Konvertierung zu Datum
@@ -863,7 +1056,8 @@ ggplot(wochentag_monat_anzahl, aes(x = Wochentag, y = Anzahl, fill = Monat)) +
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-print(wochentag_monat_anzahl)
+
+# print(wochentag_monat_anzahl)
 ```
 
 ### Durchschnittliche Anzahl der Diebstähle nach Wochentag
@@ -896,8 +1090,7 @@ ggplot(wochentag_anzahl, aes(x = Wochentag, y = Anzahl, fill = Wochentag)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-# Ergebnisse anzeigen
-print(durchschnitt_wochentag)
+# print(durchschnitt_wochentag)
 ```
 
 ### Anzahl der Fälle von Fahrraddiebstählen nach Monat+Jahr
@@ -954,9 +1147,8 @@ monat_anzahl <- monat_anzahl %>%
 # Plot nur für Monate
 ggplot(monat_anzahl, aes(x = Monat, y = Anzahl, fill = Monat)) +
   geom_bar(stat = "identity") +
-  scale_fill_brewer(palette = "Set3") +
   labs(
-    title = "Fälle von Fahrraddiebstählen je Monat",
+    title = "Durchschnitteliche Anzahl an Fällen von Fahrraddiebstählen je Monat",
     x = "Monat",
     y = "Anzahl der Fälle",
     fill = "Monat"
