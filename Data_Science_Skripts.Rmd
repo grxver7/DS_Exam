@@ -3,37 +3,29 @@ title: "Data Science Exam, Fahrraddiebstahl in Berlin 2023 - 2024"
 output:
   html_document:
     df_print: paged
+  word_document: default
+  pdf_document: default
 ---
 
 # Data Science Exam, Fahrraddiebstahl in Berlin 2023 - 2024
-
-### Datensatz laden
-
-```{r}
-install.packages(c("rmarkdown", "readxl", "dplyr", "ggplot2", "sf", "xml2"))
-```
 ```{r}
 # Load the necessary libraries
 library(readxl)
+library(plotly)
 library(dplyr)
 library(ggplot2)
 library(sf)
 library(xml2)
+library(lubridate)
 ```
 
-```{r}
-options(repos = c(CRAN = "https://cran.rstudio.com/"))
-```
-
+### Datensatz laden
 
 ```{r}
-# Load the necessary libraries
-library(readxl)
-
 # Load the CSV dataset with ISO-8859-1 encoding
 fahrraddiebstahl_datensatz <- read.csv("20.1 Stuttgart - Fahrraddiebstahl 2023+2024 Berlin/Fahrraddiebstahl in Berlin 2023 - 2024.csv", 
                                        fileEncoding = "ISO-8859-1", 
-                                       colClasses = c("LOR" = "character")) # als chaaracter, um zu vermeiden, dass die 0 verloren geht
+                                       colClasses = c("LOR" = "character")) # als character, um zu vermeiden, dass die 0 verloren geht
 
 # Load the Excel dataset
 lor_datensatz <- read_excel("20.1 Stuttgart - Fahrraddiebstahl 2023+2024 Berlin/LOR-Räume mit Kontextindikatoren.xlsx")
@@ -51,10 +43,6 @@ fahrraddiebstahl_datensatz_df <- data.frame(fahrraddiebstahl_datensatz)
 
 ```{r}
 str(fahrraddiebstahl_datensatz)
-```
-
-```{r}
-install.packages("dplyr")
 ```
 
 ## Anzahl der Diebstähle Absolut
@@ -92,83 +80,19 @@ colnames(lor_df) <- c("Nummer", "Name", "Einwohner", "Jugendarbeitslosigkeit", "
 lor_df <- lor_df[, c("Nummer", "Name", "Einwohner")]
 ```
 
+### Präpariere die Karten
+
 ```{r}
 # Kombinieren der DataFrames basierend auf der LOR-Nummer
 fahrraddiebstahl_und_lor_df <- merge(fahrraddiebstahl_datensatz_df, lor_df, 
                                       by.x = "LOR", by.y = "Nummer", 
                                       all = FALSE)
 
-# Ausgabe des kombinierten DataFrames
-head(fahrraddiebstahl_und_lor_df)
-```
-
-```{r}
-library(dplyr)
-library(ggplot2)
-
-# Gruppierung nach LOR und Berechnung der Anzahl, einschließlich der Namen
-lor_anzahl <- fahrraddiebstahl_und_lor_df %>%
-  group_by(LOR, Name) %>%
-  summarise(Anzahl = n(), .groups = "drop")
-
-# Plot als Balkendiagramm
-ggplot(lor_anzahl, aes(x = reorder(Name, Anzahl), y = Anzahl)) +  # Reordered by Anzahl for better visual
-  geom_bar(stat = "identity", fill = "steelblue") +
-  labs(
-    title = "Absolute Anzahl der Anfänge von Fahrraddiebstählen je LOR",
-    x = "LOR Name",
-    y = "Anzahl der Fälle"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate labels for readability
-
-# Aufgeteilter Plot
-split_data <- split(lor_anzahl, cut(seq_along(1:nrow(lor_anzahl)), breaks = 4, labels = FALSE))
-
-# Erstelle die Diagramme
-library(ggplot2)
-plots <- lapply(1:4, function(i) {
-  ggplot(split_data[[i]], aes(x = reorder(Name, Anzahl), y = Anzahl)) +
-    geom_bar(stat = "identity", fill = "steelblue") +
-    labs(
-      title = paste("Absolute Anzahl der Fahrraddiebstähle je LOR (Teil", i, ")"),
-      x = "LOR Name",
-      y = "Anzahl der Fälle"
-    ) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate labels for readability
-})
-
-# Ergebnisse anzeigen
-print(plots[[1]])
-print(plots[[2]])
-print(plots[[3]])
-print(plots[[4]])
-
-```
-
-### Präpariere die Karten
-
-```{r}
-library(sf)
-library(xml2)
-
+# Importiere die Berlinkarte
 berlin_map <- read_sf("https://tsb-opendata.s3.eu-central-1.amazonaws.com/lor_bezirksregionen_2021/lor_bezirksregionen_2021.geojson")
-
-plot(berlin_map[1])
-
-# Daten nach Bezirken (BEZ) gruppieren
-if ("BEZ" %in% colnames(berlin_map)) {
-  berlin_grouped <- berlin_map %>%
-    group_by(BEZ) # Geometrien der Gruppen vereinen
-  
-  
-  # Gruppierte Karte plotten
-  plot(berlin_grouped["BEZ"])
-} else {
-  print("Spalte 'BEZ' existiert nicht.")
-}
 ```
+
+### Präparation absolute Anzahl der Fahrradiebstähle
 
 ```{r}
 # Betriebsregion
@@ -183,6 +107,27 @@ lor_anzahl_bezirksregion <- fahrraddiebstahl_datensatz %>%
 # Zusammenführen der Fahrraddiebstahldaten mit der Berlin-Karte
 berlin_map_bezirksregion <- berlin_map %>%
   left_join(lor_anzahl_bezirksregion, by = c("BZR_ID" = "LOR"))
+
+# Doppelte Einträge in BZR_NAME finden und deren IDs extrahieren
+duplicates <- berlin_map_bezirksregion %>%
+  group_by(BZR_NAME) %>%
+  filter(n() > 1) %>%
+  ungroup()
+
+# Behebe doppelte Einträge in Bezirksregionen, z.B. gibt es die Heerstraße in mehreren Bezirken
+duplicate_ids <- duplicates$BZR_ID
+
+# Für jede ID der doppelten Einträge den Bezirk herausfinden und an den Namen anhängen
+berlin_map_bezirksregion$BZR_NAME <- sapply(berlin_map_bezirksregion$BZR_ID, function(id) {
+  if (id %in% duplicate_ids) {
+    # Hole den Bezirk (BEZ) für diese ID
+    bez_value <- berlin_map_bezirksregion$BEZ[berlin_map_bezirksregion$BZR_ID == id][1]
+    # Den Bezirk an den BZR_NAME anhängen
+    return(paste0(berlin_map_bezirksregion$BZR_NAME[berlin_map_bezirksregion$BZR_ID == id], "_", bez_value))
+  } else {
+    return(berlin_map_bezirksregion$BZR_NAME[berlin_map_bezirksregion$BZR_ID == id])  # Falls keine Duplikate, Name unverändert lassen
+  }
+})
 
 # Bezirk
 
@@ -201,15 +146,25 @@ berlin_map_bezirk <- berlin_map %>%
 
 ```{r}
 # Plot erstellen, Karte ohne Planungsraum
-ggplot(data = berlin_map_bezirksregion) +
-  geom_sf(aes(fill = anzahl_bezirksregion), color = "black") +
+# Basis-Karte erstellen
+p <- ggplot(data = berlin_map_bezirksregion) +
+  geom_sf(aes(
+    fill = anzahl_bezirksregion,
+    text = paste0("Bezirksregion: ", BZR_NAME, "<br>Fälle: ", anzahl_bezirksregion)
+  ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
   theme_minimal() +
   labs(
-    title = "Absolute Anzahl an Fahrraddiebstähle in Berlin:   Bezirksregion",
+    title = "Absolute Anzahl an Fahrraddiebstähle in Berlin: Bezirksregion",
     subtitle = "Anzahl der Fälle pro Bezirksregion",
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
+
+# Interaktive Karte mit Plotly
+interactive_map <- ggplotly(p, tooltip = "text")
+
+# Zeige die interaktive Karte
+interactive_map
 
 # Plot erstellen, Karte nur Bezirk
 ggplot(data = berlin_map_bezirk) +
@@ -223,23 +178,72 @@ ggplot(data = berlin_map_bezirk) +
   )
 ```
 
-### Tabellenansicht der Absoluten Diebstähle im Bezug zu den Geodaten
+### Tabellenansicht und Balkendiagram der Absoluten Diebstähle im Bezug zu den Geodaten
+
+#### Bezirksregion
 
 ```{r}
-# Bezirksregionen
-berlin_map_bezirksregion %>%
-  select(BZR_NAME, BZR_ID, anzahl_bezirksregion) %>%
-  st_drop_geometry() %>%  # Entfernt die Geometrie-Daten
-   arrange(desc(anzahl_bezirksregion)) %>%  # Sortiert in absteigender Reihenfolge
-  show()
+# Bezirksregionen sortieren nach der Anzahl der Fahrraddiebstähle
+berlin_map_bezirksregion <- berlin_map_bezirksregion %>%
+  arrange(anzahl_bezirksregion)
 
+# Reihenfolge der Bezirksregionen nach der Anzahl der Fahrraddiebstähle für ggplot anpassen
+berlin_map_bezirksregion$BZR_NAME <- factor(berlin_map_bezirksregion$BZR_NAME, 
+                                            levels = berlin_map_bezirksregion$BZR_NAME[order(berlin_map_bezirksregion$anzahl_bezirksregion)])
+
+# Aufgeteilter Plot Bezirksregion
+split_data_bezirksregion <- split(berlin_map_bezirksregion, cut(1:nrow(berlin_map_bezirksregion), breaks = 5, labels = FALSE))
+
+# Bestimme den minimalen und maximalen Wert von anzahl_bezirksregion für den gesamten Datensatz
+min_val <- min(berlin_map_bezirksregion$anzahl_bezirksregion, na.rm = TRUE)
+max_val <- max(berlin_map_bezirksregion$anzahl_bezirksregion, na.rm = TRUE)
+
+# Erstelle die Diagramme mit einem durchgehenden Farbverlauf
+plots_bezirksregion_anzahl <- lapply(1:5, function(i) {
+  ggplot(split_data_bezirksregion[[i]], aes(x = BZR_NAME, y = anzahl_bezirksregion, fill = anzahl_bezirksregion)) +
+    geom_bar(stat = "identity") +
+    scale_fill_gradient(low = "cyan4", high = "chartreuse3", limits = c(min_val, max_val)) +  # Farbverlauf über alle Plots hinweg
+    labs(
+      title = paste("Absolute Anzahl der Fahrraddiebstähle je Bezirksregion (Teil", i, ")"),
+      x = "Bezirksregion",
+      y = "Anzahl der Fälle"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+})
+
+# Ergebnisse anzeigen
+print(plots_bezirksregion_anzahl[[1]])
+print(plots_bezirksregion_anzahl[[2]])
+print(plots_bezirksregion_anzahl[[3]])
+print(plots_bezirksregion_anzahl[[4]])
+print(plots_bezirksregion_anzahl[[5]])
+```
+
+#### Bezirk
+
+```{r}
 # Bezirke
-berlin_map_bezirk %>%
-  select(BEZ, anzahl_bezirk) %>%
-  st_drop_geometry() %>%  # Entfernt die Geometrie-Daten
-   distinct(BEZ, .keep_all = TRUE) %>%  # Entfernt Duplikate basierend auf 'BEZ'
-   arrange(desc(anzahl_bezirk)) %>%  # Sortiert in absteigender Reihenfolge
-  show()
+
+# Duplikate in der BEZ-Spalte entfernen und sortieren
+berlin_map_bezirk <- berlin_map_bezirk %>%
+  distinct(BEZ, .keep_all = TRUE) %>%
+  arrange(anzahl_bezirk)
+
+# Konvertiere die BEZ-Spalte in einen Faktor mit der aufsteigenden Reihenfolge der anzahl_bezirk
+berlin_map_bezirk$BEZ <- factor(berlin_map_bezirk$BEZ, levels = berlin_map_bezirk$BEZ)
+
+# Erstelle das Plot mit Farbverlauf
+ggplot(berlin_map_bezirk, aes(x = BEZ, y = anzahl_bezirk, fill = anzahl_bezirk)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_gradient(low = "cyan4", high = "chartreuse3") +  # Farbverlauf
+  labs(
+    title = "Absolute Anzahl der Fahrraddiebstähle je Bezirk",
+    x = "Bezirksregion",
+    y = "Anzahl der Fälle"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ## Durchschnittliche Fahrraddiebstähle (Absolute Anzahl Fahrraddiebstähle / Einwohner)
@@ -260,6 +264,27 @@ lor_durchschnitt_bezirksregion <- fahrraddiebstahl_und_lor_df %>%
 # Zusammenführen der Fahrraddiebstahldaten mit der Berlin-Karte
 berlin_map_durschnitt_bezirksregion <- berlin_map %>%
   left_join(lor_durchschnitt_bezirksregion, by = c("BZR_ID" = "LOR"))
+
+# Doppelte Einträge in BZR_NAME finden und deren IDs extrahieren
+duplicates <- berlin_map_durschnitt_bezirksregion %>%
+  group_by(BZR_NAME) %>%
+  filter(n() > 1) %>%
+  ungroup()
+
+# Behebe doppelte Einträge in Bezirksregionen, z.B. gibt es die Heerstraße in mehreren Bezirken
+duplicate_ids <- duplicates$BZR_ID
+
+# Für jede ID der doppelten Einträge den Bezirk herausfinden und an den Namen anhängen
+berlin_map_durschnitt_bezirksregion$BZR_NAME <- sapply(berlin_map_durschnitt_bezirksregion$BZR_ID, function(id) {
+  if (id %in% duplicate_ids) {
+    # Hole den Bezirk (BEZ) für diese ID
+    bez_value <- berlin_map_durschnitt_bezirksregion$BEZ[berlin_map_durschnitt_bezirksregion$BZR_ID == id][1]
+    # Den Bezirk an den BZR_NAME anhängen
+    return(paste0(berlin_map_durschnitt_bezirksregion$BZR_NAME[berlin_map_durschnitt_bezirksregion$BZR_ID == id], "_", bez_value))
+  } else {
+    return(berlin_map_durschnitt_bezirksregion$BZR_NAME[berlin_map_durschnitt_bezirksregion$BZR_ID == id])  # Falls keine Duplikate, Name unverändert lassen
+  }
+})
 
 # Bezirk
 
@@ -301,22 +326,73 @@ ggplot(data = berlin_map_durchschnitt_bezirk) +
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 ```
+### Tabelle und Balkendiagramm des Durchschnitts, Bezirksregionen
 
 ```{r}
 # Bezirksregionen
-berlin_map_durschnitt_bezirksregion %>%
-  select(BZR_NAME, BZR_ID, durchschnitt_promille) %>%
-  st_drop_geometry() %>%  # Entfernt die Geometrie-Daten
-   arrange(desc(durchschnitt_promille)) %>%  # Sortiert in absteigender Reihenfolge
-  show()
+
+# Bezirksregionen sortieren nach dem Durchschnitt in Promille
+berlin_map_durschnitt_bezirksregion <- berlin_map_durschnitt_bezirksregion %>%
+  arrange(durchschnitt_promille)
+
+# Reihenfolge der Bezirksregionen nach dem Durchschnitt in Promille für ggplot anpassen
+berlin_map_durschnitt_bezirksregion$BZR_NAME <- factor(berlin_map_durschnitt_bezirksregion$BZR_NAME, 
+                                                       levels = berlin_map_durschnitt_bezirksregion$BZR_NAME[order(berlin_map_durschnitt_bezirksregion$durchschnitt_promille)])
+
+# Aufgeteilter Plot Bezirksregion
+split_data_bezirksregion_durchschnitt <- split(berlin_map_durschnitt_bezirksregion, cut(1:nrow(berlin_map_durschnitt_bezirksregion), breaks = 5, labels = FALSE))
+
+# Bestimme den minimalen und maximalen Wert von 'durchschnitt_promille' für den gesamten Datensatz
+min_val <- min(berlin_map_durschnitt_bezirksregion$durchschnitt_promille, na.rm = TRUE)
+max_val <- max(berlin_map_durschnitt_bezirksregion$durchschnitt_promille, na.rm = TRUE)
+
+# Erstelle die Diagramme mit einem durchgehenden Farbverlauf
+plots_bezirksregion_durchschnitt <- lapply(1:5, function(i) {
+  ggplot(split_data_bezirksregion_durchschnitt[[i]], aes(x = BZR_NAME, y = durchschnitt_promille, fill = durchschnitt_promille)) +
+    geom_bar(stat = "identity") +
+    scale_fill_gradient(low = "cyan4", high = "chartreuse3", limits = c(min_val, max_val)) +  # Farbverlauf über alle Plots hinweg
+    labs(
+      title = paste("Durchschnitt in Promille je Bezirksregion (Teil", i, ")"),
+      x = "Bezirksregion",
+      y = "Durchschnitt in Promille"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+})
+
+# Ergebnisse anzeigen
+print(plots_bezirksregion_durchschnitt[[1]])
+print(plots_bezirksregion_durchschnitt[[2]])
+print(plots_bezirksregion_durchschnitt[[3]])
+print(plots_bezirksregion_durchschnitt[[4]])
+print(plots_bezirksregion_durchschnitt[[5]])
+```
+
+### Tabelle und Balkendiagramm des Durchschnitts, Bezirke
+
+```{r}
 
 # Bezirke
-berlin_map_durchschnitt_bezirk %>%
-  select(BEZ, durchschnitt_promille) %>%
-  st_drop_geometry() %>%  # Entfernt die Geometrie-Daten
-   distinct(BEZ, .keep_all = TRUE) %>%  # Entfernt Duplikate basierend auf 'BEZ'
-   arrange(desc(durchschnitt_promille)) %>%  # Sortiert in absteigender Reihenfolge
-  show()
+
+# Duplikate in der BEZ-Spalte entfernen und sortieren
+berlin_map_durchschnitt_bezirk <- berlin_map_durchschnitt_bezirk %>%
+  distinct(BEZ, .keep_all = TRUE) %>%
+  arrange(durchschnitt_promille)
+
+# Konvertiere die BEZ-Spalte in einen Faktor mit der aufsteigenden Reihenfolge der anzahl_bezirk
+berlin_map_durchschnitt_bezirk$BEZ <- factor(berlin_map_durchschnitt_bezirk$BEZ, levels = berlin_map_durchschnitt_bezirk$BEZ)
+
+# Erstelle das Plot mit Farbverlauf
+ggplot(berlin_map_durchschnitt_bezirk, aes(x = BEZ, y = durchschnitt_promille, fill = durchschnitt_promille)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_gradient(low = "cyan4", high = "chartreuse3") +  # Farbverlauf
+  labs(
+    title = "Durchschnitt der Fahrraddiebstähle je Bezirk",
+    x = "Bezirk",
+    y = "Durchscnitt der Fälle"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ## Diebstähle nach Fahrradarten
@@ -373,9 +449,6 @@ fahrrad_schaden_stats_df <- do.call(data.frame, fahrrad_schaden_stats)
 
 # Tabelle mit den gestohlenen Fahrrädern und den Schadenshöhen zusammenführen
 fahrrad_schaden_stats_df <- merge(tabelle_fahrrad_art_df, fahrrad_schaden_stats_df, by = "ART_DES_FAHRRADS")
-
-# Tabelle anzeigen
-print(fahrrad_schaden_stats_df)
 ```
 
 ```{r}
@@ -724,10 +797,6 @@ Diese Kapitel analysiert die Anzahlen der Diebstähle an den unterschiedlichen T
 ### Präparation des Datensatzen
 
 ```{r}
-# Konvertiere `TATZEIT_ANFANG_DATUM` in ein Datum-Format und extrahiere den Monat
-library(dplyr)
-library(lubridate) # Für Datumsfunktionen
-
 # Annahme: fahrraddiebstahl_datensatz_df enthält eine Spalte `TATZEIT_ANFANG_DATUM` im Format "%d.%m.%Y"
 fahrraddiebstahl_datensatz_Anzahl_df <- fahrraddiebstahl_datensatz_df %>%
   mutate(
@@ -736,7 +805,7 @@ fahrraddiebstahl_datensatz_Anzahl_df <- fahrraddiebstahl_datensatz_df %>%
   )
 
 # Gruppiere nach `TATZEIT_DATUM_ANZAHL` und zähle die Anzahl der Fälle je Datum
-datum_anzahl <- fahrraddiebstahl_datensatz_df %>%
+datum_anzahl <- fahrraddiebstahl_datensatz_Anzahl_df %>%
   filter(!is.na(TATZEIT_DATUM_ANZAHL)) %>% # NA-Werte entfernen
   group_by(TATZEIT_DATUM_ANZAHL, Monat) %>% # Gruppiere auch nach Monat
   summarise(Anzahl = n(), .groups = "drop")
