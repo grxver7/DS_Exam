@@ -18,6 +18,7 @@ library(ggplot2)
 library(sf)
 library(xml2)
 library(lubridate)
+library(treemap)
 ```
 
 # Datensatz laden
@@ -160,7 +161,7 @@ p_reg <- ggplot(data = berlin_map_bezirksregion) +
   )
 
 # Interaktive Karte mit Plotly
-interactive_map_reg <- ggplotly(p_reg, tooltip = "text")
+interactive_map_reg <- ggplotly(p_reg)
 
 # Zeige die interaktive Karte
 interactive_map_reg
@@ -180,7 +181,7 @@ p_bez <- ggplot(data = berlin_map_bezirk) +
   )
 
 # Interaktive Version der Karte
-interactive_map_bez <- ggplotly(p_bez, tooltip = "text")
+interactive_map_bez <- ggplotly(p_bez)
 
 # Zeige die interaktive Karte
 interactive_map_bez
@@ -221,8 +222,6 @@ interactive_plots_bezirksregion_anzahl <- lapply(1:3, function(i) {
       theme_minimal() +
       theme(axis.text.x = element_blank(),  # Entfernt die x-Achsen-Beschriftung
             axis.ticks.x = element_blank()) # Entfernt die x-Achsen-Ticks
-    ,
-    tooltip = "text"
   )
 })
 
@@ -340,7 +339,7 @@ p_bezirksregion <- ggplot(data = berlin_map_durschnitt_bezirksregion) +
   )
 
 # Interaktive Version
-interactive_map_bezirksregion <- ggplotly(p_bezirksregion, tooltip = "text")
+interactive_map_bezirksregion <- ggplotly(p_bezirksregion)
 
 # Zeige die interaktive Karte
 interactive_map_bezirksregion
@@ -363,7 +362,7 @@ p_bezirk <- ggplot(data = berlin_map_durchschnitt_bezirk) +
   )
 
 # Interaktive Version
-interactive_map_bezirk <- ggplotly(p_bezirk, tooltip = "text")
+interactive_map_bezirk <- ggplotly(p_bezirk)
 
 # Zeige die interaktive Karte
 interactive_map_bezirk
@@ -411,7 +410,7 @@ interactive_plots_bezirksregion_durchschnitt <- lapply(1:3, function(i) {
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
   
   # Konvertiere ggplot-Objekt zu einer interaktiven Version
-  ggplotly(p, tooltip = "text")
+  ggplotly(p)
 })
 
 # Ergebnisse anzeigen
@@ -423,7 +422,6 @@ print(interactive_plots_bezirksregion_durchschnitt[[3]])
 ### Tabelle und Balkendiagramm des Durchschnitts, Bezirke
 
 ```{r}
-
 # Bezirke
 
 # Duplikate in der BEZ-Spalte entfernen und sortieren
@@ -458,8 +456,26 @@ tabelle_fahrrad_art <- table(fahrraddiebstahl_datensatz['ART_DES_FAHRRADS'])
 # Tabelle in ein Dataframe umwandeln, um die Tabele übersichtlicher darzustellen
 tabelle_fahrrad_art_df <- as.data.frame(tabelle_fahrrad_art)
 
-# Tabelle anzeigen
-print(tabelle_fahrrad_art_df)
+colnames(tabelle_fahrrad_art_df) <- c("ART_DES_FAHRRADS", "ANZAHL")
+
+# Plotly Treemap erstellen
+plot_ly(
+  tabelle_fahrrad_art_df, 
+  type = "treemap",
+  labels = tabelle_fahrrad_art_df$Art_des_Fahrrads,  # Labels anpassen
+  parents = rep("", nrow(tabelle_fahrrad_art_df)),  # Keine Elternkategorie
+  values = tabelle_fahrrad_art_df$Anzahl,
+  textinfo = "label+value",   # Anzeige von Label und Wert
+  hoverinfo = "label+value",  # Anzeige von Label und Wert beim Hover
+  marker = list(
+    colors = tabelle_fahrrad_art_df$Anzahl,
+    colorscale = "Greens",
+    line = list(color = "white", width = 0.5)
+  )
+) %>%
+  layout(
+    title = "Treemap: Arten von Fahrrädern und Diebstahlanzahl"
+  )
 ```
 
 ### Verteilung Delikte
@@ -595,7 +611,7 @@ p_schadenshoehe_bezirksregion <- ggplot(data = berlin_map_schadenshöhe_bezirksr
   )
 
 # Interaktive Version
-interactive_map_schadenshoehe_bezirksregion <- ggplotly(p_schadenshoehe_bezirksregion, tooltip = "text")
+interactive_map_schadenshoehe_bezirksregion <- ggplotly(p_schadenshoehe_bezirksregion)
 
 # Zeige die interaktive Karte
 interactive_map_schadenshoehe_bezirksregion
@@ -618,7 +634,7 @@ p_schadenshoehe_bezirk <- ggplot(data = berlin_map_schadenshöhe_bezirk) +
   )
 
 # Interaktive Version
-interactive_map_schadenshoehe_bezirk <- ggplotly(p_schadenshoehe_bezirk, tooltip = "text")
+interactive_map_schadenshoehe_bezirk <- ggplotly(p_schadenshoehe_bezirk,)
 
 # Zeige die interaktive Karte
 interactive_map_schadenshoehe_bezirk
@@ -644,27 +660,45 @@ berlin_map_schadenshöhe_bezirksregion %>%
 ### Visualisierung der durchschnittlichen Schadenshöhe in einer Karte & Tabelle
 
 ```{r}
-# Plot erstellen, Karte ohne Planungsraum
-ggplot(data = berlin_map_schadenshöhe_durschnitt_bezirksregion) +
-  geom_sf(aes(fill = SCHADENSHOEHE_DURCHSCHNITT), color = "black") +
+# Interaktive Karte nur Bezirk
+p_reg <- ggplot(data = berlin_map_schadenshöhe_durschnitt_bezirksregion) +
+  geom_sf(aes(
+    fill = SCHADENSHOEHE_DURCHSCHNITT,
+    text = paste0("Bezirksregion: ", BZR_NAME, "<br>Durchschnitt der Schadenshöhe: ", SCHADENSHOEHE_DURCHSCHNITT)
+  ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
   theme_minimal() +
   labs(
-    title = "Durchschnitt der Schadenshöhe von Fahrraddiebstählen in Berlin: Bezirksregion",
-    subtitle = "Durchschnitt: Schadenshöhe / Anzahl der Einwohner pro Bezirksregion",
+    title = "Absolute Anzahl an Fahrraddiebstähle in Berlin: Bezirk",
+    subtitle = "Anzahl der Fälle pro Bezirk",
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
-# Plot erstellen, Karte nur Bezirk
-ggplot(data = berlin_map_schadenshöhe_durchschnitt_bezirk) +
-  geom_sf(aes(fill = SCHADENSHOEHE_DURCHSCHNITT), color = "black") +
+# Interaktive Version der Karte
+interactive_map_reg <- ggplotly(p_reg)
+
+# Zeige die interaktive Karte
+interactive_map_reg
+
+# Interaktive Karte nur Bezirk
+p_bez <- ggplot(data = berlin_map_schadenshöhe_durchschnitt_bezirk) +
+  geom_sf(aes(
+    fill = SCHADENSHOEHE_DURCHSCHNITT,
+    text = paste0("Bezirksregion: ", BEZ, "<br>Durchschnitt der Schadenshöhe: ", SCHADENSHOEHE_DURCHSCHNITT)
+  ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
   theme_minimal() +
   labs(
-    title = "Durchschnitt der Schadenshöhe von Fahrraddiebstählen in Berlin: Bezirk",
-    subtitle = "Durchschnitt: Schadenshöhe / Anzahl der Einwohner pro Bezirk",
+    title = "Absolute Anzahl an Fahrraddiebstähle in Berlin: Bezirk",
+    subtitle = "Anzahl der Fälle pro Bezirk",
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
+
+# Interaktive Version der Karte
+interactive_map_bez <- ggplotly(p_bez)
+
+# Zeige die interaktive Karte
+interactive_map_bez
 ```
 
 ```{r}
@@ -686,7 +720,7 @@ p_schadenshoehe_durchschnitt_bezirksregion <- ggplot(data = berlin_map_schadensh
   )
 
 # Interaktive Version
-interactive_map_schadenshoehe_durchschnitt_bezirksregion <- ggplotly(p_schadenshoehe_durchschnitt_bezirksregion, tooltip = "text")
+interactive_map_schadenshoehe_durchschnitt_bezirksregion <- ggplotly(p_schadenshoehe_durchschnitt_bezirksregion)
 
 # Zeige die interaktive Karte
 interactive_map_schadenshoehe_durchschnitt_bezirksregion
@@ -709,7 +743,7 @@ p_schadenshoehe_durchschnitt_bezirk <- ggplot(data = berlin_map_schadenshöhe_du
   )
 
 # Interaktive Version
-interactive_map_schadenshoehe_durchschnitt_bezirk <- ggplotly(p_schadenshoehe_durchschnitt_bezirk, tooltip = "text")
+interactive_map_schadenshoehe_durchschnitt_bezirk <- ggplotly(p_schadenshoehe_durchschnitt_bezirk)
 
 # Zeige die interaktive Karte
 interactive_map_schadenshoehe_durchschnitt_bezirk
@@ -943,7 +977,7 @@ p_reg <- ggplot(data = berlin_map_bezirksregion) +
   )
 
 # Interaktive Karte mit Plotly
-interactive_map_reg <- ggplotly(p_reg, tooltip = "text")
+interactive_map_reg <- ggplotly(p_reg)
 # Zeige die interaktive Karte
 interactive_map_reg
 ```
@@ -988,7 +1022,7 @@ p_reg <- ggplot(data = berlin_map_bezirksregion) +
   )
 
 # Interaktive Karte mit Plotly
-interactive_map_reg_uhrzeit <- ggplotly(p_reg, tooltip = "text")
+interactive_map_reg_uhrzeit <- ggplotly(p_reg)
 # Zeige die interaktive Karte
 interactive_map_reg_uhrzeit
 ```
