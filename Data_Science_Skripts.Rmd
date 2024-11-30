@@ -19,42 +19,77 @@ library(sf)
 library(xml2)
 library(lubridate)
 library(treemap)
+library(knitr)
 ```
 
 # Datensatz laden
+
+Für die Datenauswertung werden zwei Datensätze geladen. Zum einen die csv mit dem Namen "Fahrraddiebstahl in Berlin 2023 - 2024.csv".
 
 ```{r}
 # Load the CSV dataset with ISO-8859-1 encoding
 fahrraddiebstahl_datensatz <- read.csv("20.1 Stuttgart - Fahrraddiebstahl 2023+2024 Berlin/Fahrraddiebstahl in Berlin 2023 - 2024.csv", 
                                        fileEncoding = "ISO-8859-1", 
                                        colClasses = c("LOR" = "character")) # als character, um zu vermeiden, dass die 0 verloren geht
-
-# Load the Excel dataset
-lor_datensatz <- read_excel("20.1 Stuttgart - Fahrraddiebstahl 2023+2024 Berlin/LOR-Räume mit Kontextindikatoren.xlsx")
 ```
 
-Konnvertiere den Datensatz in einen Dataframe
+Zur besseren Datenbearbeitung wird der Datensatz zudem auch in ein Dataframe geladen.
 
 ```{r}
 fahrraddiebstahl_datensatz_df <- data.frame(fahrraddiebstahl_datensatz)
 ```
 
+Der Dataframe beinhaltet elf verschiedene Attribute.
+
 ```{r}
 str(fahrraddiebstahl_datensatz)
 ```
 
+### Beschreibung der Attribute
+
+1.  **ANGELEGT_AM**: Datum und Uhrzeit der Vorgangsanlage im Format "TT.MM.JJJJ hh:mm".
+
+2.  **TATZEIT_ANFANG_DATUM**: Beginn des Tatzeitraums im Format "TT.MM.JJJJ".
+
+3.  **TATZEIT_ANFANG_STUNDE**: Stunde des Beginns des Tatzeitraums im Format "hh".
+
+4.  **TATZEIT_ENDE_DATUM**: Ende des Tatzeitraums im Format "TT.MM.JJJJ".
+
+5.  **TATZEIT_ENDE_STUNDE**: Stunde des Endes des Tatzeitraums im Format "hh".
+
+6.  **LOR**: Kennung des Planungsraums (8-stellig) (vvxxyyzz –\> vv=Bezirksnummer, xx=Prognosebereich, yy=Bezirksregion, zz=Planungsraum
+
+7.  **SCHADENSHOEHE**: Wert des entwendeten Gutes in Euro (Summenangabe). Bei Kellereinbrüchen inkludiert dieser Wert alle gestohlenen Gegenstände, wie Fahrräder und andere Objekte. Keine Angabe bei reinem Sachschaden.
+
+8.  **VERSUCH**: Gibt an, ob es sich um einen Versuch handelt (Mögliche Werte: "ja"/"nein").
+
+9.  **ART_DES_FAHRRADS**: Typ des gestohlenen Fahrrads (z. B. Herrenrad, Damenrad). Bei mehreren Fahrrädern unterschiedlichen Typs wird der Wert "diverse Fahrräder" ausgegeben.
+
+10. **DELIKT**: Gruppierung des Delikts (Mögliche Werte: "Fahrraddiebstahl" oder "Keller- und Bodeneinbruch").
+
+11. **ERFASSUNGSGRUND**: Detaillierte Beschreibung des Delikts.
+
+    -   Mögliche Werte:
+        -   "Einfacher Diebstahl von Fahrrädern"
+        -   "Einfacher Diebstahl aus Keller/Boden von Fahrrädern"
+        -   "Sonstiger schwerer Diebstahl von Fahrrädern"
+        -   "Sonstiger schwerer Diebstahl in/aus Keller/Boden von Fahrrädern".
+    -   Einfache Diebstähle sind Taten gemäß §242 StGB, bei denen das Diebesgut (z. B. Fahrrad) ungesichert war.
+    -   Schwere Diebstähle (gemäß §243 StGB) betreffen Fälle mit vorhandenen Schutzvorrichtungen oder gewerbsmäßigem Handeln.
+
+### Zusätzliche Anmerkungen
+
+Der Datensatz ermöglicht keine direkte Ermittlung der exakten Anzahl gestohlener Fahrräder. Die im Rahmen der Datenanalyse ermittelten Zahlen zu Diebstählen sind daher nicht gleichbedeutend mit der tatsächlichen Anzahl der gestohlenen Fahrräder.
+
+Der Datensatz enthält einen Zeitraum, der den vermuteten Zeitpunkt eines Fahrraddiebstahls angibt. Dieser Zeitraum wurde so gewählt, dass er maximal 72 Stunden umfasst, wie in der Beschreibung des Datensatzes vermerkt. Dennoch kann mit dem Datensatz grobe Kenntnisse über die Dauer und bevorzugte Zeiten von Diebstählen erarbeitet werden. Diese sollten jedoch aus dem zuvor genannten Grund in der Interpretation mit Vorsicht behandelt werden.
+
 # Anzahl der Diebstähle
 
-Aufgabenstellung: Beschreiben Sie die Anzahl der Diebstähle absolut
+Dieses Kapitel beschreibt die Anzahl der Diebstählen absolut und durchschnittlich (absolute Anzahl/Einwohnerzahl). Dabei verwendet der zweite Teil Geo-Daten (Quelle:"<https://daten.odis-berlin.de/de/dataset/lor_bezirksregionen_2021/>") und ordnet die Werte den Bezirken/Bezirksregionen über die LOR zu.
 
 ## Absolute Anzahl
 
-### Verteilungs (Versuchter Raub/Erfolreicher Raub/Unbekannt)
-
-```{r}
-tabelle_versuche <- table(fahrraddiebstahl_datensatz['VERSUCH'])
-print(tabelle_versuche)
-```
+Dieses Unterkapitel beschreibt die absolute Anzahl an Fahrraddiebstählen aus dem Datensatz "Fahrraddiebstahl in Berlin 2023 - 2024".
 
 ### Anzahl Vorfälle insgesamt
 
@@ -63,45 +98,100 @@ anzahl_fälle <- nrow(fahrraddiebstahl_datensatz)
 print(paste("Die Anzahl der Vorfälle eines Diebstahls oder eines Diebstahlsversuch beträgt:", anzahl_fälle))
 ```
 
-## Anzahl der Diebstähle im Zusammenhang mit Bezirken/Bezirksregionen
+### Verteilungs (Versuchter Raub/Erfolreicher Raub/Unbekannt)
 
-Aufgabenstellung: Beschreiben Sie die Anzahl der Diebstähle in Zusammenhang mit Bezirken / Bezirksregion
+```{r}
+# Tabelle erstellen
+tabelle_versuche <- table(fahrraddiebstahl_datensatz['VERSUCH'])
+
+# Tabelle als knitr-Tabelle anzeigen
+kable(tabelle_versuche, caption = "Tabelle der Versuche")
+```
+
+In den meisten Fällen der gemeldeten Fahrraddiebstähle war der Diebstahl erfolgreich, während nur in 169 Fällen der Versuch scheiterte. Der Unterschied könnte jedoch auch darin liegen, dass die betroffene Person den Diebstahlsversuch nicht bemerkt oder nicht gemeldet hat, da die Fahrräder weiterhin vorhanden waren und kein durch den Versuch verursachter Schaden festgestellt wurde.
+
+## Anzahl der Diebstähle im Zusammenhang mit den Bezirken/Bezirksregionen
+
+Dieses Unterkapitel verknüpft den Datensatz mit den Geo-Daten (Quelle: <https://daten.odis-berlin.de/de/dataset/lor_bezirksregionen_2021>) und der Datei "LOR-Räume mit Kontextindikatoren.xlsx". Die kombinierten Daten werden in interaktiven Karten und Balkendiagrammen visualisiert, um eine übersichtliche Darstellung auch bei großen Datensätzen zu gewährleisten. Durch hoverbare Elemente können detaillierte Informationen zu den einzelnen Werten und deren Beschreibungen abgerufen werden, ohne die Gesamtübersicht zu beeinträchtigen.
 
 ### LOR-Datensatz aufbereiten
 
 ```{r}
 # Lade die Excel-Datei (ersetze "datei.xlsx" durch deinen Dateipfad)
-lor_df <- read_excel("20.1 Stuttgart - Fahrraddiebstahl 2023+2024 Berlin/LOR-Räume mit Kontextindikatoren.xlsx", skip = 6)
+lor_df <- read_excel("20.1 Stuttgart - Fahrraddiebstahl 2023+2024 Berlin/LOR-Räume mit Kontextindikatoren.xlsx", skip = 6) # Überspringe die ersten 6 Zeilen, da diese nicht bestandteil des Datensatzes sind
 
 # Bereite die Spaltennamen auf
 colnames(lor_df) <- c("Nummer", "Name", "Einwohner", "Jugendarbeitslosigkeit", "Altersarmut", "Kinder und Jugendliche mit Migrationshintergrund", "Einwohner mit Migrationshintergrund", "Ausländische Transferbezieher", "Einfache Wohnlage (einschl. Lärmbelastung)", "Wohndauer über 10 Jahre", "Ausländerinnen und Ausländer", "Nicht-EU-Ausländerinnen und Nicht-EU-Ausländer")
 
 # Wähle nur die Spalten Nummer und Name aus, da nur diese benötigt werden
-lor_df <- lor_df[, c("Nummer", "Name", "Einwohner")]
-```
+lor_df_verkleinert <- lor_df[, c("Nummer", "Name", "Einwohner")]
 
-### Präpariere die Karten
-
-```{r}
 # Kombinieren der DataFrames basierend auf der LOR-Nummer
-fahrraddiebstahl_und_lor_df <- merge(fahrraddiebstahl_datensatz_df, lor_df, 
+fahrraddiebstahl_und_lor_df <- merge(fahrraddiebstahl_datensatz_df, lor_df_verkleinert, 
                                       by.x = "LOR", by.y = "Nummer", 
                                       all = FALSE)
 
-# Importiere die Berlinkarte
+# Importiere die Berlinkarte (Geo-Daten)
 berlin_map <- read_sf("https://tsb-opendata.s3.eu-central-1.amazonaws.com/lor_bezirksregionen_2021/lor_bezirksregionen_2021.geojson")
+
+str(lor_df)
+str(berlin_map)
 ```
+
+Bei der Aufbereitung der Daten wurden die Namen der Spalten von Kontext-Indikatoren in verständlichere Bezeichnungen geändert.
+
+#### Beschreibung der Attribute
+
+lor_df:
+
+-   **Jugendarbeitslosigkeit**: Prozentsatz der Arbeitslosen unter 25 Jahren nach SGB II im Vergleich zu allen 15- bis unter 25-Jährigen zum Stichtag 31.12.2016.
+
+-   **Altersarmut**: Prozentsatz der Empfänger von Grundsicherung nach SGB XII über der Regelaltersgrenze im Vergleich zu allen Personen über der Regelaltersgrenze am 31.12.2016.
+
+-   **Kinder und Jugendliche mit Migrationshintergrund**: Prozentsatz der unter 18-Jährigen mit Migrationshintergrund im Vergleich zu allen unter 18-Jährigen insgesamt am 31.12.2016.
+
+-   **Einwohner mit Migrationshintergrund**: Prozentsatz der Einwohner mit Migrationshintergrund im Vergleich zu allen Einwohnern insgesamt am 31.12.2016.
+
+-   **Ausländische Transferbezieher**: Prozentsatz der ausländischen Empfänger von Transferleistungen nach SGB II im Vergleich zu allen Ausländern unterhalb der Regelaltersgrenze am 31.12.2016.
+
+-   **Einfache Wohnlage (einschl. Lärmbelastung)**: Prozentsatz der Einwohner in einfacher Wohnlage (einschließlich Lärmbelastung durch Straßenverkehr) im Vergleich zu allen Einwohnern am 31.12.2016.
+
+-   **Wohndauer über 10 Jahre**: Prozentsatz der Einwohner, die mindestens 5 Jahre an ihrer aktuellen Adresse wohnen, im Vergleich zu allen Einwohnern im Alter von 5 Jahren und älter am 31.12.2016.
+
+-   **Ausländerinnen und Ausländer**: Prozentsatz der Ausländer im Vergleich zu allen Einwohnern am 31.12.2016.
+
+-   **Nicht-EU-Ausländerinnen und Nicht-EU-Ausländer**: Prozentsatz der Nicht-EU-Ausländer im Vergleich zu allen Ausländern am 31.12.2016. \### Präpariere die Karten
+
+berlin_map
+
+-   **BZR_ID**: Eine eindeutige ID für jedes Gebiet in Berlin (Charakterfeld).
+
+-   **BZR_NAME**: Der Name des Bezirks oder Gebietes in Berlin (Charakterfeld).
+
+-   **BEZ**: Die Nummer des Bezirks, der das Gebiet repräsentiert (Charakterfeld).
+
+-   **STAND**: Das Standdatum der Daten, meist der 01.01.2021 (Charakterfeld).
+
+-   **GROESSE_m2**: Die Fläche des Gebiets in Quadratmetern (Numerisch).
+
+-   **geometry**: Geometrische Daten, die das Gebiet in Form von Multipolygonen darstellen (Geodaten).
 
 ### Präparation absolute Anzahl der Fahrradiebstähle
 
-```{r}
-# Betriebsregion
+Die Kombination der Geodaten beschränkt sich auf die Ebenen „Bezirk“ und „Bezirksregion“, da die Planungsräume nicht in der Karte dargestellt sind. Die Aufgabenstellung nennt zudem nur explizit die Untersuchung nach Bezirk und Bezirksregion.
 
-# Präpariere den Datensatz
+Die Verbindung zwischen den Geodaten und den anderen beiden Datensätzen erfolgt über die „BZR_ID“, die den ersten sechs Ziffern der „LOR“ entspricht. Um die Verknüpfung herzustellen, müssen in den Datensätzen die letzten beiden Ziffern der „LOR“ entfernt werden, sodass diese nur noch die Länge von sechs Ziffern hat. Anschließend werden die Nummern zusammengeführt, sofern sie durch die Operation dieselbe Nummer aufweisen.
+
+Es gibt Bezirksregionen, die denselben Namen tragen, jedoch in unterschiedlichen Bezirken existieren. Um spätere Konflikte zu vermeiden, werden doppelte Einträge herausgefiltert. Dann wird der Name der Bezirksregion so angepasst, dass die zugehörige Bezirksnummer an den Namen angehängt wird, um eine eindeutige Zuordnung zu gewährleisten.
+
+```{r}
+# Bezirksregion
+
+# Datensatz für Bezirksregionen präparieren
 lor_anzahl_bezirksregion <- fahrraddiebstahl_datensatz %>%
-  mutate(LOR = as.character(LOR),  # Stelle sicher, dass LOR als Zeichenkette behandelt wird
+  mutate(LOR = as.character(LOR),
          LOR = substr(LOR, 1, 6)) %>%  # Extrahiere die ersten 6 Zeichen der LOR
-  group_by(LOR) %>%  # Nach den ersten 6 Zeichen der LOR gruppieren
+  group_by(LOR) %>%
   summarise(anzahl_bezirksregion = n(), .groups = "drop")
 
 # Zusammenführen der Fahrraddiebstahldaten mit der Berlin-Karte
@@ -132,25 +222,35 @@ berlin_map_bezirksregion$BZR_NAME <- sapply(berlin_map_bezirksregion$BZR_ID, fun
 # Bezirk
 
 lor_anzahl_bezirk <- fahrraddiebstahl_datensatz %>%
-  mutate(LOR = as.character(LOR),  # Stelle sicher, dass LOR als Zeichenkette behandelt wird
-         LOR = substr(LOR, 1, 2)) %>%  # Extrahiere die ersten 6 Zeichen der LOR
-  group_by(LOR) %>%  # Nach den ersten 6 Zeichen der LOR gruppieren
+  mutate(LOR = as.character(LOR),
+         LOR = substr(LOR, 1, 2)) %>%  # Extrahiere die ersten 2 Zeichen der LOR (für Bezirke)
+  group_by(LOR) %>%
   summarise(anzahl_bezirk = n(), .groups = "drop")
 
-# Zusammenführen der Fahrraddiebstahldaten mit der Berlin-Karte
-berlin_map_bezirk <- berlin_map %>%
+# Absolute Anzahl der Bezirksregionen pro Bezirk
+anzahl_bezirksregionen_pro_bezirk <- berlin_map %>%
+  group_by(BEZ) %>%
+  summarise(anzahl_bezirksregionen = n(), .groups = "drop")
+
+berlin_map_bezirk <- anzahl_bezirksregionen_pro_bezirk %>%
   left_join(lor_anzahl_bezirk, by = c("BEZ" = "LOR"))
 ```
 
-### Kartengrafiken zu den absoluten Fahrradiebstählen
+## Visualisierungen zu den absoluten Fahrradiebstählen
+
+Die nachfolgenden Grafiken zeigen die absoluten Anzahlen der gemeldeten Fahrraddiebstähle in Bezug auf die verschiedenen Bezirksregionen und Bezirken.
+
+### Bezirksregion
 
 ```{r}
-# Plot erstellen, Karte ohne Planungsraum
 # Basis-Karte erstellen
 p_reg <- ggplot(data = berlin_map_bezirksregion) +
   geom_sf(aes(
-    fill = anzahl_bezirksregion,
-    text = paste0("Bezirksregion: ", BZR_NAME, "<br>Fälle: ", anzahl_bezirksregion)
+    fill = anzahl_bezirksregion,  # Füllung basierend auf numerischen Daten
+    text = paste(
+      "Bezirksregion:", BZR_NAME, "<br>",
+      "Fälle:", anzahl_bezirksregion
+    ) # Tooltip-Inhalt
   ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
   theme_minimal() +
@@ -161,35 +261,17 @@ p_reg <- ggplot(data = berlin_map_bezirksregion) +
   )
 
 # Interaktive Karte mit Plotly
-interactive_map_reg <- ggplotly(p_reg)
+interactive_map_reg <- ggplotly(p_reg, tooltip = "text")
 
 # Zeige die interaktive Karte
 interactive_map_reg
-
-# Interaktive Karte nur Bezirk
-p_bez <- ggplot(data = berlin_map_bezirk) +
-  geom_sf(aes(
-    fill = anzahl_bezirk,
-    text = paste0("Bezirk: ", BEZ, "<br>Fälle: ", anzahl_bezirk)
-  ), color = "black") +
-  scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
-  theme_minimal() +
-  labs(
-    title = "Absolute Anzahl an Fahrraddiebstähle in Berlin: Bezirk",
-    subtitle = "Anzahl der Fälle pro Bezirk",
-    caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
-  )
-
-# Interaktive Version der Karte
-interactive_map_bez <- ggplotly(p_bez)
-
-# Zeige die interaktive Karte
-interactive_map_bez
 ```
 
-### Tabellenansicht und Balkendiagram der absoluten Anzahl an Diebstählen im Bezug zu den Geodaten
+Im Rahmen der Datenanalyse werden häufig Karten zur Visualisierung eingesetzt, da sie den Bezug zwischen den Geo-Daten und dem Datensatz anschaulich darstellen. Da Kartengrafiken die Unterschiede in den Werten meist nur durch Farbverläufe anzeigen, werden sie durch ergänzende Diagramme ergänzt, um die Daten noch präziser zu veranschaulichen.
 
-#### Bezirksregion
+Die Karten verdeutlichen die Wertunterschiede durch Farbtonvariationen, wobei Blau für niedrige Werte und Rot für hohe Werte steht. Dieses Farbkonzept bleibt konsistent und wird in allen folgenden Karten beibehalten, die ebenfalls diese Farbvariation nutzen.
+
+Die Kartengrafik zeigt, dass die Anzahl der gemeldeten Fahrraddiebstähle besonders im Stadtzentrum am höchsten ist, was durch die rötliche Farbgebung in dieser Region verdeutlicht wird. Besonders auffällig sind die Bezirke "Tempelhofer Vorstadt" mit insgesamt 1470 Fällen und "Alexanderplatz" mit 1386 gemeldeten Diebstählen, die in der Grafik eine markante rote Färbung aufweisen. Im Gegensatz dazu haben die Bezirke "Schmöckwitz" mit nur 10 und "Müggelheim" mit 20 Fällen deutlich weniger Diebstähle, die durch einen tiefen Blauton hervorgehoben werden.
 
 ```{r}
 # Bezirksregionen sortieren nach der Anzahl der Fahrraddiebstähle
@@ -231,11 +313,33 @@ interactive_plots_bezirksregion_anzahl[[2]]
 interactive_plots_bezirksregion_anzahl[[3]]
 ```
 
+Das Diagramm zeigt die gleichen Ergebnisse wie die Karte, jedoch in Form eines Balkendiagramms. Die Balken sind aufsteigend nach der Anzahl der Fälle sortiert, wodurch die Unterschiede zwischen den Regionen deutlich hervortreten. Der Farbverlauf der Karte, der die Werte von Blau (niedrig) bis Rot (hoch) darstellt, wurde auch im Balkendiagramm beibehalten.
+
 #### Bezirk
 
 ```{r}
-# Bezirke
+# Interaktive Karte nur Bezirk
+p_bez <- ggplot(data = berlin_map_bezirk) +
+  geom_sf(aes(
+    fill = anzahl_bezirk,
+    text = paste0("Bezirk: ", BEZ, "<br>Fälle: ", anzahl_bezirk)
+  ), color = "black") +
+  scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
+  theme_minimal() +
+  labs(
+    title = "Absolute Anzahl an Fahrraddiebstähle in Berlin: Bezirk",
+    subtitle = "Anzahl der Fälle pro Bezirk",
+    caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
+  )
 
+# Interaktive Version der Karte
+interactive_map_bez <- ggplotly(p_bez)
+
+# Zeige die interaktive Karte
+interactive_map_bez
+```
+
+```{r}
 # Duplikate in der BEZ-Spalte entfernen und sortieren
 berlin_map_bezirk <- berlin_map_bezirk %>%
   distinct(BEZ, .keep_all = TRUE) %>%
@@ -257,13 +361,17 @@ ggplot(berlin_map_bezirk, aes(x = BEZ, y = anzahl_bezirk, fill = anzahl_bezirk))
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-## Durchschnittliche Fahrraddiebstähle
+Die Grafiken zeigen, dass die höchste absolute Anzahl gemeldeter Fälle im Zentrum Berlins liegt. Besonders herausstechend sind Bezirk 1 und Bezirk 2, die die meisten Fälle verzeichnen. Zu diesen Bezirken gehören auch Regionen, die in den vorherigen Ergebnissen Spitzenreiter waren, wie "Tempelhofer Vorstadt" und "Alexanderplatz". Die niedrigsten Fallzahlen finden sich hingegen in Bezirk 5 und Bezirk 10. Müggelheim, das zuvor als Region mit den wenigsten absoluten Fällen identifiziert wurde, liegt jedoch nicht in einem dieser Bezirke. Dabei ist zu beachten, dass die Bezirke unterschiedlich viele Regionen umfassen, was dazu führt, dass beispielsweise Bezirk 9 nun eine deutlich höhere absolute Fallzahl aufweist.
 
-Der Durchschnitt berechnet sich aus der absoluten Anzahl an Fahrraddiebstähle geteilt durch die Einwohnerzahl aus der Datei "LOR-Räume mit Kontextindikatoren"
+# Durchschnittliche Fahrraddiebstähle
+
+Da es sich dem Kapitel zuvor lediglich um absolute Anzahlen an gemeldeten Fahrradiebstählen handelte, analysiert dieses Kapitel die durchschnittlichen Fahrraddiebstählen. Dabei berechnet sich der Durchschnitt zu einen aus der absoluten Anzahl dividiert durch die Einwohnerzahl der Region/Bezirk aus der Datei "LOR-Räume mit Kontextindikatoren.xlsx" und zu anderen aus der absoluten Anzahl in einem Bezirk, dividiert durch die Anzahl der Regionen in dem Bezirk.
 
 ### Präparation Durchschnitt der Fahrradiebstähle
 
 ```{r}
+# absolute Anzahl / Einwohner
+
 # Betriebsregion
 
 # Präpariere den Datensatz
@@ -318,7 +426,34 @@ berlin_map_durchschnitt_bezirk <- berlin_map %>%
   left_join(lor_durchschnitt_bezirk, by = c("BEZ" = "LOR"))
 ```
 
-### Kartengrafiken zu den durchschnittlichen Fahrradiebstählen
+### Visualisierungen zu den durchschnittlichen Fahrradiebstählen (mit Bezirksregion)
+
+```{r}
+p_bez <- ggplot(data = berlin_map_bezirk) +
+  geom_sf(aes(
+    fill = round(anzahl_bezirk/anzahl_bezirksregionen, 2),
+    text = paste0("Bezirk: ", BEZ, "<br>Fälle: ", round(anzahl_bezirk/anzahl_bezirksregionen, 2))
+  ), color = "black") +
+  scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
+  theme_minimal() +
+  labs(
+    title = "Durchschnittliche Anzahl an Fahrraddiebstähle in Berlin: Bezirk",
+    subtitle = "Anzahl der Fälle pro Bezirk / Bezirksregionen",
+    caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
+  )
+
+# Interaktive Version der Karte
+interactive_map_bez <- ggplotly(p_bez)
+
+# Zeige die interaktive Karte
+interactive_map_bez
+```
+
+Diese Karte zeigt das Verhältnis der absoluten Anzahl der Bezirke zur Anzahl der Regionen innerhalb jedes Bezirks. Die unterschiedlichen Farbtöne verdeutlichen, dass die Analyse aus dem vorherigen Kapitel durch die ungleiche Verteilung der Regionen pro Bezirk verfälscht wurde.
+
+Trotz dieser Anpassung bleiben Bezirk 5 und Bezirk 10 die Bezirke mit den geringsten Vorfällen, während Bezirk 1 und Bezirk 2 die Bezirke mit den meisten Vorfällen bleiben. Besonders deutlich zeigt sich eine Veränderung bei den Bezirken 1, 6, 9 und 12.
+
+### Visualisierungen zu den durchschnittlichen Fahrradiebstählen (mit Einwohnerzahl)
 
 ```{r}
 # Interaktive Karte: Bezirksregionen
@@ -453,29 +588,36 @@ ggplot(berlin_map_durchschnitt_bezirk, aes(x = BEZ, y = durchschnitt_promille, f
 # Tabelle erstellen
 tabelle_fahrrad_art <- table(fahrraddiebstahl_datensatz['ART_DES_FAHRRADS'])
 
-# Tabelle in ein Dataframe umwandeln, um die Tabele übersichtlicher darzustellen
+# Tabelle in ein Dataframe umwandeln
 tabelle_fahrrad_art_df <- as.data.frame(tabelle_fahrrad_art)
 
+# Spalten umbenennen
 colnames(tabelle_fahrrad_art_df) <- c("ART_DES_FAHRRADS", "ANZAHL")
 
+# Sicherstellen, dass ANZAHL numerisch ist
+tabelle_fahrrad_art_df$ANZAHL <- as.numeric(tabelle_fahrrad_art_df$ANZAHL)
+
 # Plotly Treemap erstellen
+library(plotly)
+
 plot_ly(
   tabelle_fahrrad_art_df, 
   type = "treemap",
-  labels = tabelle_fahrrad_art_df$Art_des_Fahrrads,  # Labels anpassen
-  parents = rep("", nrow(tabelle_fahrrad_art_df)),  # Keine Elternkategorie
-  values = tabelle_fahrrad_art_df$Anzahl,
+  labels = tabelle_fahrrad_art_df$ART_DES_FAHRRADS,  # Labels
+  parents = rep("", nrow(tabelle_fahrrad_art_df)),  # Keine Hierarchie
+  values = tabelle_fahrrad_art_df$ANZAHL,  # Werte
   textinfo = "label+value",   # Anzeige von Label und Wert
   hoverinfo = "label+value",  # Anzeige von Label und Wert beim Hover
   marker = list(
-    colors = tabelle_fahrrad_art_df$Anzahl,
-    colorscale = "Greens",
+    colors = tabelle_fahrrad_art_df$ANZAHL,
+    colorscale = "Greens",    # Farbabstufung
     line = list(color = "white", width = 0.5)
   )
 ) %>%
   layout(
     title = "Treemap: Arten von Fahrrädern und Diebstahlanzahl"
   )
+
 ```
 
 ### Verteilung Delikte
@@ -484,11 +626,42 @@ plot_ly(
 # Tabelle erstellen
 tabelle_delikte <- table(fahrraddiebstahl_datensatz['DELIKT'])
 
-# Tabelle in ein Dataframe umwandeln, um die Tabele übersichtlicher darzustellen
+# Tabelle in ein Dataframe umwandeln
 tabelle_delikte_df <- as.data.frame(tabelle_delikte)
+colnames(tabelle_delikte_df) <- c("Delikt", "Anzahl")
 
-# Tabelle anzeigen
-print(tabelle_delikte_df)
+# Prozentwerte berechnen
+tabelle_delikte_df <- tabelle_delikte_df %>%
+  mutate(Prozent = round((Anzahl / sum(Anzahl)) * 100, 1),
+         Label = paste0(Delikt, ": ", Anzahl, " (", Prozent, "%)"))
+
+# Interaktives Kuchendiagramm mit plotly
+kuchendiagramm_delikte <- plot_ly(
+  tabelle_delikte_df,
+  labels = ~Delikt,
+  values = ~Anzahl,
+  type = 'pie',
+  textinfo = 'none',  # Entfernt Beschriftung auf dem Chart
+  hoverinfo = 'text', # Zeigt Informationen nur beim Hovern
+  text = ~Label
+)
+
+# Diagramm und Layout gestalten
+kuchendiagramm_delikte <- kuchendiagramm_delikte %>% layout(
+  title = "Interaktives Kuchendiagramm der Delikte",
+  showlegend = TRUE,
+  legend = list(
+    x = 1.05,    # Position rechts außerhalb des Charts
+    y = 0.5,     # Vertikal mittig (50% der Höhe)
+    valign = "middle"
+  ),
+  margin = list(l = 50, r = 150, t = 50, b = 50), # Platz für die Legende rechts
+  xaxis = list(showgrid = FALSE, zeroline = FALSE),
+  yaxis = list(showgrid = FALSE, zeroline = FALSE)
+)
+
+# Diagramm anzeigen
+kuchendiagramm_delikte
 ```
 
 ### Verteilung Erfassungsgrund:
@@ -497,14 +670,45 @@ print(tabelle_delikte_df)
 # Tabelle erstellen
 tabelle_erfassungsgrund <- table(fahrraddiebstahl_datensatz['ERFASSUNGSGRUND'])
 
-# Tabelle in ein Dataframe umwandeln, um die Tabele übersichtlicher darzustellen
+# Tabelle in ein Dataframe umwandeln
 tabelle_erfassungsgrund_df <- as.data.frame(tabelle_erfassungsgrund)
+colnames(tabelle_erfassungsgrund_df) <- c("Erfassungsgrund", "Anzahl")
 
-# Tabelle anzeigen
-print(tabelle_erfassungsgrund_df)
+# Prozentwerte berechnen
+tabelle_erfassungsgrund_df <- tabelle_erfassungsgrund_df %>%
+  mutate(Prozent = round((Anzahl / sum(Anzahl)) * 100, 1),
+         Label = paste0(Erfassungsgrund, ": ", Anzahl, " (", Prozent, "%)"))
+
+# Interaktives Kuchendiagramm mit plotly
+kuchendiagramm_erfassungsgrund <- plot_ly(
+  tabelle_erfassungsgrund_df,
+  labels = ~Erfassungsgrund,
+  values = ~Anzahl,
+  type = 'pie',
+  textinfo = 'none',
+  hoverinfo = 'text',
+  text = ~Label
+)
+
+# Diagramm gestalten
+kuchendiagramm_erfassungsgrund <- kuchendiagramm_erfassungsgrund %>% layout(
+  title = "Interaktives Kuchendiagramm der Erfassungsgründe",
+  showlegend = TRUE,
+  legend = list(
+    x = 1.05,    # Position rechts außerhalb des Charts
+    y = 0.5,     # Vertikal mittig (50% der Höhe)
+    valign = "middle"
+  ),
+  margin = list(l = 50, r = 150, t = 50, b = 50), # Platz für die Legende rechts
+  xaxis = list(showgrid = FALSE, zeroline = FALSE),
+  yaxis = list(showgrid = FALSE, zeroline = FALSE)
+)
+
+# Diagramm anzeigen
+kuchendiagramm_erfassungsgrund
 ```
 
-## Verteilungsfunktionen
+# Schadenshöhe
 
 ```{r}
 # Gesamtzahl und Durchschnitt der Schadenshöhe je Fahrradart berechnen
@@ -520,7 +724,7 @@ fahrrad_schaden_stats_df <- merge(tabelle_fahrrad_art_df, fahrrad_schaden_stats_
 ```
 
 ```{r}
-summary(fahrrad_schaden_stats_df)
+fahrrad_schaden_stats_df
 ```
 
 ## Schadenshöhe je Region/Bezirk
@@ -592,15 +796,17 @@ berlin_map_schadenshöhe_durchschnitt_bezirk <- berlin_map %>%
 
 ### Visualisierung der absoluten Schadenshöhe in einer Karte & Tabelle
 
+ME
+
 ```{r}
 # Interaktive Karte: Bezirksregionen
 p_schadenshoehe_bezirksregion <- ggplot(data = berlin_map_schadenshöhe_bezirksregion) +
   geom_sf(aes(
-    fill = SCHADENSHOEHE_SUMME,
-    text = paste0(
-      "Bezirksregion: ", BZR_NAME,
-      "<br>Schadenshöhe: ", scales::comma(SCHADENSHOEHE_SUMME), " €"
-    )
+    fill = SCHADENSHOEHE_SUMME,  # Füllung basierend auf Schadenshöhe
+    text = paste(
+      "Bezirksregion:", BZR_NAME, "<br>",
+      "Schadenshöhe (€):", SCHADENSHOEHE_SUMME
+    )  # Tooltip-Inhalt
   ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Schadenshöhe (€)", na.value = "grey") +
   theme_minimal() +
@@ -611,30 +817,33 @@ p_schadenshoehe_bezirksregion <- ggplot(data = berlin_map_schadenshöhe_bezirksr
   )
 
 # Interaktive Version
-interactive_map_schadenshoehe_bezirksregion <- ggplotly(p_schadenshoehe_bezirksregion)
+interactive_map_schadenshoehe_bezirksregion <- ggplotly(p_schadenshoehe_bezirksregion, tooltip = "text")
 
 # Zeige die interaktive Karte
 interactive_map_schadenshoehe_bezirksregion
 
+```
+
+```{r}
 # Interaktive Karte: Bezirke
 p_schadenshoehe_bezirk <- ggplot(data = berlin_map_schadenshöhe_bezirk) +
   geom_sf(aes(
-    fill = SCHADENSHOEHE_SUMME,
-    text = paste0(
-      "Bezirk: ", BEZ,
-      "<br>Schadenshöhe: ", scales::comma(SCHADENSHOEHE_SUMME), " €"
-    )
+    fill = SCHADENSHOEHE_SUMME / 1000,  # Schadenshöhe in Tausend Euro
+    text = paste(
+      "Bezirk:", BZR_NAME, "<br>",
+      "Schadenshöhe (T€):", round(SCHADENSHOEHE_SUMME / 1000, 1)
+    )  # Tooltip-Inhalt
   ), color = "black") +
-  scale_fill_gradient(low = "blue", high = "red", name = "Schadenshöhe (€)", na.value = "grey") +
+  scale_fill_gradient(low = "blue", high = "red", name = "Schadenshöhe (T€)", na.value = "grey") +
   theme_minimal() +
   labs(
     title = "Absolute Schadenshöhe bei Fahrraddiebstählen in Berlin: Bezirk",
-    subtitle = "Schadenshöhe in Euro pro Bezirk",
+    subtitle = "Schadenshöhe in Tausend Euro pro Bezirk",
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
 # Interaktive Version
-interactive_map_schadenshoehe_bezirk <- ggplotly(p_schadenshoehe_bezirk,)
+interactive_map_schadenshoehe_bezirk <- ggplotly(p_schadenshoehe_bezirk, tooltip = "text")
 
 # Zeige die interaktive Karte
 interactive_map_schadenshoehe_bezirk
@@ -806,7 +1015,7 @@ fahrraddiebstahl_dauer_mehrere_tage_df <- subset(
 ```{r}
 # Berechnung des Durchschnitts der allgemeinen Dauer
 durchschnitt <- mean(fahrraddiebstahl_dauer_df$Dauer, na.rm = TRUE)
-print(paste("Durchschnittszeit allgemin beträgt:", durchschnitt))
+print(paste("Durchschnittszeit einer Diebstahlsdauer beträgt:", durchschnitt))
 ```
 
 ### \# Zusammenfassung der Diebstahlsdauerzeiten
