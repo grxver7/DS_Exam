@@ -3,11 +3,13 @@ title: "Data Science Exam, Fahrraddiebstahl in Berlin 2023 - 2024"
 output:
   html_document:
     df_print: paged
+    toc: true
+    toc_depth: 2
   word_document: default
   pdf_document: default
 ---
 
-## Vorkonfigurationen
+**Vorkonfigurationen:**
 
 ```{r}
 # Load the necessary libraries
@@ -22,7 +24,9 @@ library(treemap)
 library(knitr)
 ```
 
-# Datensatz laden
+# Analyse des Datensatzes
+
+## Datensatz laden
 
 Für die Datenauswertung werden zwei Datensätze geladen. Zum einen die csv mit dem Namen "Fahrraddiebstahl in Berlin 2023 - 2024.csv".
 
@@ -39,13 +43,15 @@ Zur besseren Datenbearbeitung wird der Datensatz zudem auch in ein Dataframe gel
 fahrraddiebstahl_datensatz_df <- data.frame(fahrraddiebstahl_datensatz)
 ```
 
+## Datenstruktur
+
 Der Dataframe beinhaltet elf verschiedene Attribute.
 
 ```{r}
 str(fahrraddiebstahl_datensatz)
 ```
 
-### Beschreibung der Attribute
+## Beschreibung der Attribute
 
 1.  **ANGELEGT_AM**: Datum und Uhrzeit der Vorgangsanlage im Format "TT.MM.JJJJ hh:mm".
 
@@ -598,9 +604,20 @@ Mit der Einbeziehung der Einwohnerzahl lässt sich das Risiko eines Fahrraddiebs
 
 Es sollte jedoch bedacht werden, dass weitere Faktoren eine Rolle spielen können, etwa Fahrraddiebstähle durch Personen aus anderen Bezirken, Bezirksregionen oder von außerhalb Berlins.
 
-## Auswertung der Fahrradarten, Delikte und Erfassungsgründe
+## Fazit
+In diesem Kapitel wurde die Analyse der Fahrraddiebstähle in Berlin im Zeitraum 2023-2024 durchgeführt, wobei der Fokus auf zwei Hauptaspekten lag: der absoluten Anzahl der Diebstähle und deren Verteilung auf die verschiedenen Bezirke sowie Bezirksregionen.
 
-### Art der Fahrräder
+**Absolute Anzahl der Diebstähle:**
+Der Datensatz „Fahrraddiebstahl in Berlin 2023-2024“ wurde ausgewertet, um die Gesamtzahl der Vorfälle zu ermitteln. Es zeigte sich, dass insgesamt 39.173 Diebstähle verzeichnet wurden. Bei der Differenzierung nach Art des Vorfalls stellte sich heraus, dass die Mehrheit der Diebstähle erfolgreich war: 38.996 Fälle wurden als erfolgreich gemeldet, während nur 169 Fälle als versuchte Diebstähle klassifiziert wurden.
+
+**Verknüpfung mit Geo-Daten (Bezirke und Bezirksregionen):**
+Zur weiteren Analyse wurden Geo-Daten der Berliner Bezirke und Bezirksregionen aus einem GeoJSON-Datensatz importiert. Dabei wurden wichtige Informationen wie die Namen der Bezirke, ihre Flächen sowie deren Geometrien extrahiert und visuell in interaktiven Karten und Balkendiagrammen dargestellt. Diese Darstellung ermöglichte einen klaren Vergleich zwischen den einzelnen Bezirken und Bezirksregionen. 
+
+Zusätzlich wurden Durchschnittswerte berechnet, die die Anzahl der Diebstähle pro Bezirk und Bezirksregion in Relation zur Anzahl der Bezirksregionen im Bezirk sowie zur Einwohnerzahl der jeweiligen Bezirke und Bezirksregionen setzten. Diese Berechnungen verdeutlichten, dass eine höhere Einwohnerdichte tendenziell mit einer höheren absoluten Diebstahlrate korreliert. Es zeigte sich jedoch auch, dass die durchschnittliche Diebstahlrate pro Einwohner in weniger dicht besiedelten Gebieten nicht notwendigerweise niedriger ausfiel. Überraschenderweise war die Diebstahlrate in Bezirksregionen mit geringerer Einwohnerzahl und weniger absoluten Diebstählen nach Berücksichtigung der Einwohnerzahl deutlich höher, was eine neue Perspektive der Verteilung der Diebstähle offenbarte.
+
+# Auswertung der Fahrradarten, Delikte und Erfassungsgründe
+
+## Art der Fahrräder
 
 ```{r}
 # Tabelle erstellen
@@ -637,11 +654,11 @@ plot_ly(
   )
 ```
 
-Die Mehrheit der Fahrraddiebstähle im vorliegenden Datensatz betrifft Herrenfahrräder, gefolgt von Damenfahrrädern. Deutlich seltener wurden Rennräder und Lastenfahrräder gestohlen.
+Die Treemap zeigt, dass der größte Anteil der Fahrraddiebstähle im vorliegenden Datensatz auf Herrenfahrräder entfällt, gefolgt von Damenfahrrädern. Rennräder und Lastenfahrräder wurden deutlich seltener gestohlen.
 
-Ein möglicher Einflussfaktor könnte sein, dass Rennräder und Lastenräder in Berlin insgesamt weniger verbreitet sind. Dies wäre ein interessantes Thema für weiterführende Analysen.
+Ein möglicher Einflussfaktor könnte darin liegen, dass Rennräder und Lastenräder in Berlin insgesamt weniger verbreitet sind. Dies könnte ein interessanter Ansatz für weiterführende Analysen sein.
 
-### Delikte
+## Delikte
 
 ```{r}
 # Tabelle erstellen
@@ -685,9 +702,9 @@ kuchendiagramm_delikte <- kuchendiagramm_delikte %>% layout(
 kuchendiagramm_delikte
 ```
 
-In 94,2 % der gemeldeten Fälle handelt es sich ausschließlich um Fahrraddiebstahl. In 5,8 % der Fälle wurde der Diebstahl jedoch in Verbindung mit einem Keller- oder Bodeneinbruch begangen.
+Das Kuchendiagramm zeigt, dass in 94,2 % der gemeldeten Fälle ausschließlich Fahrraddiebstähle verzeichnet wurden. In 5,8 % der Fälle erfolgte der Diebstahl jedoch in Verbindung mit einem Keller- oder Bodeneinbruch.
 
-### Verteilung Erfassungsgrund:
+## Verteilung Erfassungsgrund:
 
 ```{r}
 # Tabelle erstellen
@@ -731,7 +748,15 @@ kuchendiagramm_erfassungsgrund <- kuchendiagramm_erfassungsgrund %>% layout(
 kuchendiagramm_erfassungsgrund
 ```
 
-89,2 % der Delikte waren als sonstige schwere Diebstähle von Fahrrädern eingestuft. 5,8 % entfielen auf schwere Diebstähle in oder aus Kellern und Bodenräumen von Fahrrädern. 4,8 % der Fälle betrafen einfache Fahrraddiebstähle, während lediglich 0,2 % einfache Diebstähle aus Kellern oder Bodenräumen waren.
+Das Kuchendiagramm zeigt, dass 89,2 % der Delikte als schwere Diebstähle von Fahrrädern eingestuft wurden. 5,8 % entfielen auf schwere Diebstähle von oder aus Kellern und Bodenräumen. 4,8 % der Fälle betrafen einfache Fahrraddiebstähle, während lediglich 0,2 % einfache Diebstähle aus Kellern oder Bodenräumen ausmachten.
+
+## Fazit
+**Art der Fahrräder:**  
+Die Analyse der Fahrradarten zeigt, dass der größte Anteil der Fahrraddiebstähle im vorliegenden Datensatz auf Herrenfahrräder entfällt, gefolgt von Damenfahrrädern. Rennräder und Lastenfahrräder wurden deutlich seltener gestohlen. Eine Treemap zeigt diese Verteilung visuell, wobei Herrenfahrräder am häufigsten betroffen sind. Ein möglicher Einflussfaktor könnte darin liegen, dass Rennräder und Lastenräder in Berlin insgesamt weniger verbreitet sind, was ein interessanter Ansatz für weiterführende Analysen darstellt.
+**Delikte:**  
+Die Analyse der Delikte zeigt, dass in 94,2 % der gemeldeten Fälle ausschließlich Fahrraddiebstähle verzeichnet wurden, während in 5,8 % der Fälle der Diebstahl in Verbindung mit einem Keller- oder Bodeneinbruch stattfand. Dies wurde durch ein interaktives Kuchendiagramm visualisiert, das die Verteilung der Delikte detailliert zeigt.
+**Verteilung der Erfassungsgründe:**  
+In Bezug auf den Erfassungsgrund zeigt die Auswertung, dass 89,2 % der Delikte als schwere Diebstähle von Fahrrädern eingestuft wurden. Weitere 5,8 % entfielen auf schwere Diebstähle von oder aus Kellern und Bodenräumen. Ein kleinerer Anteil (4,8 %) betraf einfache Fahrraddiebstähle, während lediglich 0,2 % einfache Diebstähle aus Kellern oder Bodenräumen ausmachten. Ein interaktives Kuchendiagramm verdeutlicht diese Verteilung und hebt die unterschiedlichen Erfassungsgründe hervor.
 
 # Schadenshöhe
 
@@ -986,7 +1011,7 @@ ggplot(berlin_map_schadenshöhe_durchschnitt_bezirk, aes(x = BEZ, y = SCHADENSHO
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-### **Bezirksregionen**
+### Bezirksregionen
 
 Die Karte zeigt, dass die Schadenshöhe in den verschiedenen Bezirksregionen von Berlin ähnlich verteilt ist wie die Karte der "Durchschnittlichen Fahrraddiebstähle in Berlin: Bezirksregion". Bei genauerer Betrachtung fallen jedoch Unterschiede auf. Da eine Analyse aller Bezirksregionen sehr umfangreich wäre, konzentriert sich die nächste Analyse auf die Bezirke, um die Korrelation zwischen der Anzahl der Fahrraddiebstähle und der Schadenshöhe näher zu untersuchen. Dadurch können auch Rückschlüsse darauf gezogen werden, ob in den unterschiedlichen Bezirken unterschiedlich wertvolle Diebesgüter gestohlen wurden.
 
@@ -998,7 +1023,21 @@ Es ist wichtig zu betonen, dass bei der Berechnung der Schadenshöhe der Sachsch
 
 Ein genauerer Blick auf die Karten zeigt, dass in Bezirken und Bezirksregionen, die eine intensivere Rottönung aufweisen als die Karte der durchschnittlichen Fahrraddiebstähle, die Schadenshöhe höher ausfällt. In blauer dargestellten Regionen sind die Schadenshöhen tendenziell niedriger, was darauf hindeutet, dass in diesen Gegenden häufiger mehrere Fahrräder oder teurere Fahrräder sowie zusätzliches Diebesgut gestohlen wurden. Wäre die Schadenshöhe in allen Bezirken gleich, würde die Karte der Schadenshöhe ein ähnliches Bild wie die Karte der durchschnittlichen Fahrraddiebstähle zeigen.
 
-# Analyse der Diebstähle nach Tagzeiten
+## Fazit
+Die Analyse der Schadenshöhe bei Fahrraddiebstählen zeigt interessante Muster bezüglich der absoluten und durchschnittlichen Schadenshöhe nach Fahrradart sowie der regionalen Verteilung der Schäden.
+
+**Schadenshöhe nach Fahrradart:**
+Die Gesamtschadenshöhe variiert je nach Fahrradart erheblich. Besonders auffällig ist das Herrenfahrrad, welches mit einer Gesamtschadenshöhe von 22.029.945 € den größten Anteil ausmacht, was mit einem durchschnittlichen Schaden von 1.244,63 € pro Fall einhergeht. Das Damenfahrrad folgt mit einem Gesamtschaden von 10.216.520 € und einem durchschnittlichen Schaden von 1.007,94 €. Im Vergleich dazu tragen Fahrräder allgemein 8.346.700 € zur Gesamtschadenshöhe bei, mit einem durchschnittlichen Schaden von 1.354,76 €. Kleinere Kategorien, wie diverse Fahrräder, haben eine Gesamtschadenshöhe von 2.517.623 € bei einem durchschnittlichen Schaden von 2.235,01 €.
+**Schadenshöhe je Region/Bezirk:**
+Bei der Betrachtung der regionalen Verteilung zeigt sich, dass die Schadenshöhe in den verschiedenen Bezirken Berlins stark variiert. Die Bezirksregionen wurden anhand der LOR (Lokalidentifier für Region) gruppiert, und die absoluten Schadenshöhen wurden summiert. Die Karte zur absoluten Schadenshöhe zeigt die Verteilung dieser Schäden, wobei größere Bezirksregionen deutlich höhere Schäden aufweisen. Eine detailliertere Untersuchung wurde durchgeführt, um den Zusammenhang zwischen Schadenshöhe und Einwohnerzahl zu ermitteln. Diese Analyse berücksichtigt nicht nur die absolute Schadenshöhe, sondern auch den durchschnittlichen Schaden pro Einwohner, was eine genauere Einschätzung der regionalen Verhältnisse ermöglicht.
+**Durchschnittliche Schadenshöhe je Region/Bezirk:**
+Die durchschnittliche Schadenshöhe wird berechnet, indem die Gesamtschadenshöhe durch die Einwohnerzahl des jeweiligen Bezirks oder der Bezirksregion geteilt wird. Dies ermöglicht eine Einschätzung der Schwere der Schäden relativ zur Bevölkerungszahl. Auf diese Weise wird deutlich, dass einige Regionen mit einer hohen Schadenshöhe pro Kopf auffallen, was auf eine höhere Häufigkeit oder Schwere der Fahrraddiebstähle in diesen Gebieten hindeutet. Die Karte zur durchschnittlichen Schadenshöhe zeigt diese Verhältnisse, wobei Bereiche mit besonders hohen Schäden pro Einwohner in rot und mit geringeren Schäden in blau markiert sind.
+
+Die interaktive Visualisierung dieser Daten über Karten und Diagramme hilft dabei, tiefere Einblicke in die geografische und kategoriale Verteilung der Schäden zu gewinnen und gezielte Maßnahmen zur Prävention und Schadensbegrenzung zu ergreifen.
+
+# Analyse der Tatzeiträume
+
+In diesem Kapitel werden die Zeiträume von Fahrraddiebstählen analysiert. Die Daten wurden in die Kategorien „Tagsüber“, „Nachts“ und „mehrere Tage“ unterteilt, wobei die Zuordnung anhand des Beginns des Diebstahls erfolgt. Die Diebstähle werden der Kategorie „Tagsüber“ zugeordnet, wenn sie zwischen 6:00 und 17:59 Uhr beginnen, der Kategorie „Nachts“, wenn sie zwischen 18:00 und 5:59 Uhr starten, und der Kategorie „mehrere Tage“, wenn der Diebstahl über 24 Stunden andauert.
 
 ## Präparation des Datensatz
 
@@ -1049,10 +1088,7 @@ fahrraddiebstahl_dauer_mehrere_tage_df <- subset(
 )
 ```
 
-## Zeiträume
-Dieses Unterkapitel beschäftigt sich mit den Zeiträumen von Fahrraddiebstählen. Die Daten wurden in die Kategorien „Tagsüber“, „Nachts“ und „mehrere Tage“ unterteilt, wobei die Zuordnung anhand des Beginns des Diebstahls erfolgt. Die Diebstähle werden der Kategorie „Tagsüber“ zugeordnet, wenn sie zwischen 6:00 und 17:59 Uhr beginnen, der Kategorie „Nachts“, wenn sie zwischen 18:00 und 5:59 Uhr beginnen, und der Kategorie „mehrere Tage“, wenn der Diebstahl über 24 Stunden andauert.
-
-### Durchschnittszeiten
+## Durchschnittszeiten
 
 ```{r}
 # Berechnung des Durchschnitts der allgemeinen Dauer
@@ -1062,7 +1098,7 @@ print(paste("Durchschnittszeit des Zeitraums eines Diebstahls beträgt:", durchs
 
 Da der Zeitraum des Fahrraddiebstahls sich aus der Zeitspanne zwischen dem letzten Moment, in dem das Fahrrad gesehen wurde, und dem Zeitpunkt, an dem der Diebstahl bemerkt wurde, ergibt, ist diese Aussage wenig aussagekräftig. Sie gibt lediglich an, dass der durchschnittliche Zeitraum zwischen dem letzten Sichtung des Fahrrads, dem tatsächlichen Diebstahl und dem Moment, in dem der Diebstahl bemerkt wurde, etwa 14 Stunden beträgt.
 
-### Zusammenfassung der Diebstahlsdauerzeiten
+## Zusammenfassung der Diebstahlsdauerzeiten
 
 ```{r}
 # Zusammenfassungen für verschiedene Datenrahmen
@@ -1094,7 +1130,7 @@ fahrraddiebstahl_dauer_df[fahrraddiebstahl_dauer_df$Dauer > 72, ]
 ```
 Der Datensatz scheint auf den ersten Blick nur einen Zeitraum von 72 Stunden zu umfassen. Eine genauere Untersuchung zeigt jedoch, dass am Sonntag, dem 29. Oktober 2023, eine Zeitumstellung stattgefunden hat (Quelle: [BMWK](https://www.bmwk.de/Redaktion/DE/Pressemitteilungen/2023/10/20231027-die-sommerzeit-endet-am-29-oktober-2023.html#:~:text=Am%20kommenden%20Sonntag%2C%20dem%2029,die%20Mitteleurop%C3%A4ische%20Sommerzeit%20(%20MESZ%20))). Dadurch ergibt sich ein Zeitraum von tatsächlich 73 Stunden. Die Funktion "difftime" hat diese Zeitumstellung berücksichtigt, was den korrekten maximalen Wert von 73 Stunden erklärt. Die ursprüngliche Datensatzbeschreibung ist daher ungenau, da sie die Zeitumstellung nicht berücksichtigt hat.
 
-### Dauer Verteilungsfuktion
+## Tatzeitdauer: Verteilungsfuktionen
 
 ```{r}
 # Tagsüber
@@ -1147,7 +1183,7 @@ Nachts: Auch nachts werden die meisten Diebstähle innerhalb der ersten Stunde b
 
 Mehrere Tage: Im Zeitraum von 25 bis 35 Stunden lässt sich ein abfallender Trend beobachten. Von der 35. bis zur 50. Stunde steigt der Wert stark an, bleibt jedoch deutlich unter dem Höhepunkt der 25. Stunde. Zwischen der 50. und 60. Stunde tritt ein weiterer Tiefpunkt auf. Ab etwa der 62. Stunde stabilisiert sich der Wert und pendelt sich zwischen 100 und 150 Fällen ein. Ein möglicher Einflussfaktor für diese Schwankungen könnte das Wochenmuster sein, weshalb eine detailliertere Analyse der Wochentage sinnvoll wäre.
 
-### Dauer Verteilungsfuktion, Wochentage
+## Tatzeitdauer: Verteilungsfuktion nach Wochentagen
 
 ```{r}
 # Sicherstellen, dass die Wochentag-Spalte erstellt wird
@@ -1188,13 +1224,24 @@ ggplot(data = fahrraddiebstahl_dauer_wochentag_df, aes(x = Wochentag, y = Stunde
     axis.text.y = element_text(size = 10)
   )
 ```
-Die Werte am Freitag und Samstag ab der 36. Stunde sind auffällig höher als an den anderen Tagen von Sonntag bis Donnerstag. Besonders ausgeprägt ist der Anstieg am Freitag ab der 60. Stunde. Rechnet man 60 Stunden ab Freitag, landet man beim Montag. Ähnlich verhält es sich mit den Samstagswerten: Bei einer Hochrechnung von 42 Stunden landet man ebenfalls am Montag. Dies deutet darauf hin, dass Diebstähle, die am Wochenende stattgefunden haben, häufig erst am Montag bemerkt wurden. Die Anstiege im Verlauf lassen sich also über mehrere Tage hinweg den jeweiligen Wochentagen zuordnen.
+Die Werte am Freitag und Samstag ab der 36. Stunde zeigen auffällig höhere Spitzen im Vergleich zu den übrigen Tagen von Sonntag bis Donnerstag. Besonders ausgeprägt ist der Anstieg am Freitag ab der 60. Stunde. Rechnet man 60 Stunden ab Freitag, landet man beim Montag, was auf einen Zusammenhang hindeutet. Ähnlich verhält es sich mit den Samstagswerten: Bei einer Hochrechnung von 42 Stunden landet man ebenfalls am Montag. Diese Muster legen nahe, dass Diebstähle, die am Wochenende stattgefunden haben, häufig erst am Montag bemerkt wurden.
 
-## Anzahl der Tatzeiten nach Stunde
+Um die genaue Ursache für dieses Phänomen zu ermitteln, wäre eine eingehendere Untersuchung des Fahrradverkehrs und der Aktivitäten der Berliner Bürger notwendig. Möglicherweise hängt es mit dem Wochenendverhalten zusammen, wie etwa dem Wegfahren oder der unbemerkten Abwesenheit von zu Hause. In vielen Fällen wird ein Fahrraddiebstahl erst dann bemerkt, wenn die Betroffenen das Fahrrad am Montag wieder benötigen, um zur Arbeit oder zu anderen Verpflichtungen zu fahren. 
+
+Eine weiterführende Untersuchung wird im Rahmen dieser Analyse nicht durchgeführt, da die erforderlichen Daten nicht vorliegen und eine solche Analyse den Umfang dieser Untersuchung deutlich überschreiten würde.
+
+## Fazit
+Die Analyse zeigt, dass es bestimmte Zeiträume und Wochentage gibt, an denen Diebstähle häufiger festgestellt werden, was auf spezifische Verhaltensmuster hinweist. Besonders auffällig sind die erhöhten Zahlen an Wochenenden, was möglicherweise auf eine verzögerte Entdeckung von Diebstählen gegen Ende des Wochenendes hinweist.
+
+Darüber hinaus zeigt die Analyse, dass Diebstähle häufig eine Dauer von weniger als einer Stunde aufweisen, wobei diese Zeitspanne mit den meisten Fällen korreliert. Dieses Ergebnis könnte für die Untersuchung der Tatzeiten von Bedeutung sein, da diese spezifischen Zeitdauern einer bestimmten Uhrzeit (in Stunden) zugeordnet werden können.
+
+# Analyse der Tatzeiten
 
 Mit diesem Kapitel der Datenanalyse sollen präferierte Tatzeiten herausgefunden werden.
 
-### Absolute Anzahl der Anfänge der Tatzeiten nach Stunde
+## Präferiert Uhrzeiten
+
+### Gesamter Datensatz
 
 ```{r}
 fahrraddiebstahl_anzahl_df <- fahrraddiebstahl_datensatz_df
@@ -1220,44 +1267,86 @@ ggplot(stunden_anzahl, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anzahl)) +
     y = "Anzahl der Fälle"
   ) +
   theme_minimal()
-
-# print(stunden_anzahl)
 ```
+Das Diagramm veranschaulicht die Häufigkeit der Diebstähle zu den verschiedenen geschätzten Anfangszeiten. Aufgrund der Ungenauigkeit dieser Uhrzeiten bei längeren Tatdauern ist die Aussagekraft jedoch eingeschränkt. Die Analyse der Dauer hat jedoch ergeben, dass in einigen Fällen mehrere Diebstähle innerhalb derselben Stunde erfasst wurden. Diese Daten können daher herausgefiltert werden, um präzisere Aussagen über die tatsächlichen Tatzeiten zu ermöglichen.
 
-### Absolute Anzahl der Endzeiten der Diebstähle nach Stunde
+### Präferierte Uhrzeiten mit beschränkter Dauer (Dauer<1)
 
 ```{r}
+# Filtere die Datensätze mit DAUER < 1
+fahrraddiebstahl_anzahl_df_beschränkte_dauer <- fahrraddiebstahl_dauer_df %>%
+  filter(Dauer == 0)
+
 # Konvertiere `TATZEIT_ANFANG_STUNDE` in numerisch, um Fehler mit NA-Werten zu vermeiden
-fahrraddiebstahl_anzahl_df$TATZEIT_STUNDE_ANZAHL <- as.numeric(fahrraddiebstahl_datensatz_df$TATZEIT_ENDE_STUNDE)
+fahrraddiebstahl_anzahl_df_beschränkte_dauer$TATZEIT_STUNDE_ANZAHL <- as.numeric(fahrraddiebstahl_anzahl_df_beschränkte_dauer$TATZEIT_ANFANG_STUNDE)
 
-# Gruppiere nach `TATZEIT_ANFANG_STUNDE` und zähle die Anzahl der Fälle je Stunde
-library(dplyr)
-
-stunden_anzahl <- fahrraddiebstahl_anzahl_df %>%
-  filter(!is.na(TATZEIT_STUNDE_ANZAHL)) %>% # NA-Werte entfernen
+# Entferne NA-Werte und gruppiere nach Stunden
+stunden_anzahl_beschränkte_dauer <- fahrraddiebstahl_anzahl_df_beschränkte_dauer %>%
+  filter(!is.na(TATZEIT_STUNDE_ANZAHL)) %>%  # NA-Werte entfernen
   group_by(TATZEIT_STUNDE_ANZAHL) %>%
   summarise(Anzahl = n())
 
-# Plot als Balkendiagramm
-ggplot(stunden_anzahl, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anzahl)) +
+# Plot als Balkendiagramm für Diebstähle mit Dauer 0
+ggplot(stunden_anzahl_beschränkte_dauer, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anzahl)) +
   geom_bar(stat = "identity", fill = "cyan4") +
   labs(
-    title = "Absolute Anzahl der Enden von Fahrraddiebstählen je Stunde",
+    title = "Präferierte Uhrzeiten von Fahrraddiebstählen (in Stunde)",
     x = "Stunde des Tages",
     y = "Anzahl der Fälle"
   ) +
   theme_minimal()
-
-# print(stunden_anzahl)
 ```
+Das Diagramm zeigt die Häufigkeit von Fahrraddiebstählen im Verlauf eines Tages. Die x-Achse ist in Stunden unterteilt (von 0 bis 24 Uhr), während die y-Achse die Anzahl der Diebstähle darstellt. Ziel der Analyse war es, präferierte Uhrzeiten für Fahrraddiebstähle zu identifizieren. Dabei wurden ausschließlich Datensätze berücksichtigt, deren Dauer weniger als eine Stunde beträgt.
 
-Dabei ist abzuwägen, was "Anfang des Fahrraddiebstahls" bedeutet. Die Personen, die die Fälle gemeldet haben, werden vermutlich dort das Rad zuletzt gesehen haben.
+**Höchstwerte**: Die meisten Diebstähle ereignen sich am Nachmittag und frühen Abend, insbesondere zwischen 14 und 19 Uhr. Ein markanter Peak tritt um 16 Uhr auf.
+**Tiefwerte**: In den frühen Morgenstunden (zwischen 2 und 5 Uhr) sowie in den späten Abendstunden (nach 21 Uhr) sind Fahrraddiebstähle seltener.
+**Allgemeiner** Trend: Die Häufigkeit der Diebstähle steigt stetig von den frühen Morgenstunden an, erreicht ihren Höhepunkt am Nachmittag und nimmt danach wieder ab.
+
+Das Ergebnis zeigt, dass Fahrraddiebstähle besonders häufig um 17 Uhr auftreten, während sie um 5 Uhr weniger bevorzugt sind. Der markante Höhepunkt um 17 Uhr war im Diagramm deutlich sichtbar, unabhängig von der Dauer der Tatzeiträume. In den Nachtstunden hingegen sind die Werte schwerer zu interpretieren, da Betroffene den Diebstahl möglicherweise im Schlaf nicht bemerken. Eine Erweiterung der Zeitintervalle würde hier keine neuen Erkenntnisse bringen, da die Schlafdauer individuell stark variiert. Betrachtet man jedoch beide Diagramme statistisch, lässt sich feststellen, dass nachts insgesamt weniger Fahrraddiebstähle verzeichnet werden, wodurch der Tiefpunkt um 5 Uhr weiterhin Bestand haben kann.
+
+### Präferierte Uhrzeiten mit beschränkter Dauer (Dauer≤2)
+
+Um mehr Daten einzubeziehen, wurde die Toleranz der Zeitdauer auf 3 Stunden (≤2) erhöht. Dadurch wird ein großer Anteil der Fälle abgedeckt, wie die Diagramme der Zeitdauern zeigen. Ob diese Anpassung die präferierten Uhrzeiten wesentlich beeinflusst, wird im folgenden Diagramm verdeutlicht.
+
+```{r}
+# Filtere die Datensätze mit DAUER <= 2
+fahrraddiebstahl_anzahl_df_beschränkte_dauer <- fahrraddiebstahl_dauer_df %>%
+  filter(Dauer <= 2)
+
+# Konvertiere `TATZEIT_ANFANG_STUNDE` in numerisch, um Fehler mit NA-Werten zu vermeiden
+fahrraddiebstahl_anzahl_df_beschränkte_dauer$TATZEIT_STUNDE_ANZAHL <- as.numeric(fahrraddiebstahl_anzahl_df_beschränkte_dauer$TATZEIT_ANFANG_STUNDE)
+
+# Entferne NA-Werte und gruppiere nach Stunden
+stunden_anzahl_beschränkte_dauer <- fahrraddiebstahl_anzahl_df_beschränkte_dauer %>%
+  filter(!is.na(TATZEIT_STUNDE_ANZAHL)) %>%  # NA-Werte entfernen
+  group_by(TATZEIT_STUNDE_ANZAHL) %>%
+  summarise(Anzahl = n())
+
+# Plot als Balkendiagramm für Diebstähle mit Dauer 0
+ggplot(stunden_anzahl_beschränkte_dauer, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anzahl)) +
+  geom_bar(stat = "identity", fill = "cyan4") +
+  labs(
+    title = "Präferierte Uhrzeiten von Fahrraddiebstählen (in Stunde)",
+    x = "Stunde des Tages",
+    y = "Anzahl der Fälle"
+  ) +
+  theme_minimal()
+```
+Die Analyse zeigt, dass der Verlauf des Diagramms im Zeitraum <1 weitgehend unverändert bleibt, auch wenn die Toleranz auf 3 Stunden erweitert wird. Dadurch ändern sich die präferierten Uhrzeiten nicht signifikant. Die absolute Anzahl der Fälle nimmt jedoch deutlich zu, was zu einem größeren und aussagekräftigeren Datensatz führt. 
+
+Dieses Ergebnis unterstreicht, dass die Untersuchung von Dauern <1 gut geeignet ist, um präferierte Uhrzeiten zu identifizieren. Gleichzeitig zeigt es, dass für weiterführende Analysen der Datensatz mit einer Toleranz von ≤2 sinnvoll genutzt werden kann, um von der erhöhten Datenmenge zu profitieren.
 
 ## Anzahl der Diebstähle nach Ort+Uhrzeit
 
+### Karte der präferierten Uhrzeiten je Bezirksregion
+
 ```{r}
+# Filtere die Datensätze mit DAUER <=2
+fahrraddiebstahl_beschränkte_dauer_df <- fahrraddiebstahl_dauer_df %>%
+  filter(Dauer <= 2)
+
 # Datensatz nach Bezirk und Stunde gruppieren, nur mit den ersten 6 Zeichen von LOR
-lor_zeit_anzahl <- fahrraddiebstahl_datensatz_df %>%
+lor_zeit_anzahl <- fahrraddiebstahl_beschränkte_dauer_df %>%
   mutate(LOR = substr(LOR, 1, 6)) %>%  # Nur die ersten 6 Zeichen von LOR verwenden
   group_by(LOR, TATZEIT_ANFANG_STUNDE) %>%
   summarise(anzahl_diebstahl = n(), .groups = "drop") %>%
@@ -1269,8 +1358,8 @@ lor_max_zeit <- lor_zeit_anzahl %>%
   summarise(
     max_anzahl = max(anzahl_diebstahl),
     max_zeit = TATZEIT_ANFANG_STUNDE[which.max(anzahl_diebstahl)],
-    zweitmax_anzahl = sort(anzahl_diebstahl, decreasing = TRUE)[2],
-    zweitmax_zeit = TATZEIT_ANFANG_STUNDE[order(anzahl_diebstahl, decreasing = TRUE)][2],
+    zweitmax_anzahl = ifelse(n() > 1, sort(anzahl_diebstahl, decreasing = TRUE)[2], NA),
+    zweitmax_zeit = ifelse(n() > 1, TATZEIT_ANFANG_STUNDE[order(anzahl_diebstahl, decreasing = TRUE)][2], NA),
     .groups = "drop"
   )
 
@@ -1283,8 +1372,8 @@ p_reg <- ggplot(data = berlin_map_bezirksregion) +
   geom_sf(aes(
     fill = factor(max_zeit),  # Farbe nach der Stunde mit den meisten Diebstählen
     text = paste0("Bezirk: ", BZR_NAME, 
-                  "<br>Höchste Fälle um ", max_zeit, " Uhr: ", max_anzahl,
-                  "<br>Zweitmeiste Fälle um ", zweitmax_zeit, " Uhr: ", zweitmax_anzahl)
+                  "<br>Höchste Fälle um ", max_zeit, " Uhr: ", max_anzahl, " Fälle",
+                  "<br>Zweitmeiste Fälle um ", zweitmax_zeit, " Uhr: ", zweitmax_anzahl, " Fälle")
   ), color = "black") +
   scale_fill_viridis_d(name = "Uhrzeit") +  # Alternativ: Verwende das "viridis"-Farbschema
   theme_minimal() +
@@ -1294,17 +1383,77 @@ p_reg <- ggplot(data = berlin_map_bezirksregion) +
     caption = "Quelle: Fahrraddiebstahl-Datensatz"
   )
 
-# Interaktive Karte mit Plotly
-interactive_map_reg <- ggplotly(p_reg)
-# Zeige die interaktive Karte
+# Entferne `factor(max_zeit)=` aus dem Tooltip
+interactive_map_reg <- ggplotly(p_reg, tooltip = c("text"))
 interactive_map_reg
 ```
+Die Karte zeigt die Verteilung von Fahrraddiebstählen in Berlin nach Bezirken und den zugehörigen Uhrzeiten. Die verschiedenen Farben repräsentieren die Uhrzeit, zu der in einem Bezirk die meisten Diebstähle verzeichnet wurden. Die gut unterscheidbaren Farben verdeutlichen, dass die bevorzugten Tatzeiten je Bezirksregion variieren. Auffällig ist jedoch, dass die meisten Diebstähle überwiegend am Nachmittag stattfinden – ein Muster, das bereits in den vorherigen Diagrammen festgestellt wurde.
+
+Eine besondere Bezirksregion auf der Karte ist "Schmöckwitz". Hier wurden keine Fahrraddiebstähle registriert, die innerhalb einer Zeitdauer von höchstens 2 Minuten begangen wurden. Um auch für diesen Bezirk Ergebnisse zu erhalten, könnte es sinnvoll sein, die analysierte Zeitdauer etwas zu erhöhen.
+
+### Anpassung der Karte mit den präferierten Uhrzeiten je Bezirksregion
+
+Da für die Bezirksregion "Schmöckwitz" bei einer Dauer von ≤ 2 Stunden keine Fahrraddiebstahldaten vorhanden sind, muss die Toleranz für die Dauer angepasst werden. Zunächst wird die minimale Dauer berechnet, die erforderlich ist, um für Schmöckwitz Daten zu finden. Es ist dabei zu berücksichtigen, dass Schmöckwitz lediglich maximal 10 Fälle aufweist, was sich auch in der vorherigen Analyse der absoluten Anzahl an Fahrraddiebstählen pro Bezirk gezeigt hat.
 
 ```{r}
+# LOR-Substring für den Bezirk "Schmöckwitz" finden
+lor_schmoeckwitz <- berlin_map %>%
+  filter(BZR_NAME == "Schmöckwitz") %>%
+  pull(BZR_ID) %>%
+  substr(1, 6)  # Nur die ersten 6 Zeichen extrahieren
+
+# Gruppieren und Zusammenfassen der Diebstahldaten basierend auf dem Substring
+schmoeckwitz_daten <- fahrraddiebstahl_dauer_df %>%
+  filter(substr(LOR, 1, 6) == lor_schmoeckwitz) %>%  # Filtern nach passendem LOR-Substring
+  group_by(LOR_Substring = substr(LOR, 1, 6)) %>%   # Gruppieren nach Substring
+  summarise(
+    minimale_dauer = min(Dauer, na.rm = TRUE),  # Kleinste Dauer berechnen
+    maximale_dauer = max(Dauer, na.rm = TRUE),  # Maximale Dauer berechnen
+    anzahl_faelle = n(),                        # Anzahl der Fälle
+    .groups = "drop"
+  )
+
+# Tabelle für knitr erstellen
+knitr::kable(schmoeckwitz_daten, caption = "Zusammenfassung der Fahrraddiebstähle in Schmöckwitz")
+```
+
+Die minimale Dauer, bei der für Schmöckwitz Daten übermittelt werden, liegt bei ≤ 4 Stunden. Da die Gesamtzahl der Fälle in diesem Bezirk 10 beträgt, wurde der relevante Datensatz korrekt identifiziert. Nun gilt es, zu bewerten, ob die Erhöhung der Toleranz auf ≤ 4 Stunden eine signifikante Abweichung im Verlauf der präferierten Uhrzeiten im Vergleich zu den Daten mit einer Dauer von <1 Stunde darstellt. Dies soll durch die folgende grafische Darstellung veranschaulicht werden.
+
+```{r}
+# Filtere die Datensätze mit DAUER <= 4
+fahrraddiebstahl_anzahl_df_beschränkte_dauer <- fahrraddiebstahl_dauer_df %>%
+  filter(Dauer <= 4)
+
+# Konvertiere `TATZEIT_ANFANG_STUNDE` in numerisch, um Fehler mit NA-Werten zu vermeiden
+fahrraddiebstahl_anzahl_df_beschränkte_dauer$TATZEIT_STUNDE_ANZAHL <- as.numeric(fahrraddiebstahl_anzahl_df_beschränkte_dauer$TATZEIT_ANFANG_STUNDE)
+
+# Entferne NA-Werte und gruppiere nach Stunden
+stunden_anzahl_beschränkte_dauer <- fahrraddiebstahl_anzahl_df_beschränkte_dauer %>%
+  filter(!is.na(TATZEIT_STUNDE_ANZAHL)) %>%  # NA-Werte entfernen
+  group_by(TATZEIT_STUNDE_ANZAHL) %>%
+  summarise(Anzahl = n())
+
+# Plot als Balkendiagramm für Diebstähle mit Dauer 0
+ggplot(stunden_anzahl_beschränkte_dauer, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anzahl)) +
+  geom_bar(stat = "identity", fill = "cyan4") +
+  labs(
+    title = "Präferierte Uhrzeiten von Fahrraddiebstählen (in Stunde)",
+    x = "Stunde des Tages",
+    y = "Anzahl der Fälle"
+  ) +
+  theme_minimal()
+```
+Tatsächlich zeigt sich, dass sich der Datensatz bei einer Toleranz von 4 Stunden stärker unterscheidet. Ein solches Intervall für die Erfassung von Fahrraddiebstählen erscheint zu hoch und verzerrt die Ergebnisse hinsichtlich der präferierten Uhrzeiten. Daher ist es nicht sinnvoll, die Toleranz auf ≤ 4 Stunden zu erhöhen. Die Bezirksregion Schmöckwitz sollte daher als Ausnahme betrachtet werden. Dennoch wurde zur Vollständigkeit eine Karte mit der erhöhten Toleranz (≤ 4 Stunden) erstellt.
+
+```{r}
+# Filtere die Datensätze mit DAUER <=4
+fahrraddiebstahl_beschränkte_dauer_df <- fahrraddiebstahl_dauer_df %>%
+  filter(Dauer <= 4)
+
 # Datensatz nach Bezirk und Stunde gruppieren, nur mit den ersten 6 Zeichen von LOR
-lor_zeit_anzahl <- fahrraddiebstahl_datensatz_df %>%
+lor_zeit_anzahl <- fahrraddiebstahl_beschränkte_dauer_df %>%
   mutate(LOR = substr(LOR, 1, 6)) %>%  # Nur die ersten 6 Zeichen von LOR verwenden
-  group_by(LOR, TATZEIT_ENDE_STUNDE) %>%
+  group_by(LOR, TATZEIT_ANFANG_STUNDE) %>%
   summarise(anzahl_diebstahl = n(), .groups = "drop") %>%
   arrange(LOR, desc(anzahl_diebstahl))
 
@@ -1313,9 +1462,9 @@ lor_max_zeit <- lor_zeit_anzahl %>%
   group_by(LOR) %>%
   summarise(
     max_anzahl = max(anzahl_diebstahl),
-    max_zeit = TATZEIT_ENDE_STUNDE[which.max(anzahl_diebstahl)],
-    zweitmax_anzahl = sort(anzahl_diebstahl, decreasing = TRUE)[2],
-    zweitmax_zeit = TATZEIT_ENDE_STUNDE[order(anzahl_diebstahl, decreasing = TRUE)][2],
+    max_zeit = TATZEIT_ANFANG_STUNDE[which.max(anzahl_diebstahl)],
+    zweitmax_anzahl = ifelse(n() > 1, sort(anzahl_diebstahl, decreasing = TRUE)[2], NA),
+    zweitmax_zeit = ifelse(n() > 1, TATZEIT_ANFANG_STUNDE[order(anzahl_diebstahl, decreasing = TRUE)][2], NA),
     .groups = "drop"
   )
 
@@ -1328,26 +1477,27 @@ p_reg <- ggplot(data = berlin_map_bezirksregion) +
   geom_sf(aes(
     fill = factor(max_zeit),  # Farbe nach der Stunde mit den meisten Diebstählen
     text = paste0("Bezirk: ", BZR_NAME, 
-                  "<br>Höchste Fälle um ", max_zeit, " Uhr: ", max_anzahl,
-                  "<br>Zweitmeiste Fälle um ", zweitmax_zeit, " Uhr: ", zweitmax_anzahl)
+                  "<br>Höchste Fälle um ", max_zeit, " Uhr: ", max_anzahl, " Fälle",
+                  "<br>Zweitmeiste Fälle um ", zweitmax_zeit, " Uhr: ", zweitmax_anzahl, " Fälle")
   ), color = "black") +
   scale_fill_viridis_d(name = "Uhrzeit") +  # Alternativ: Verwende das "viridis"-Farbschema
   theme_minimal() +
   labs(
     title = "Fahrraddiebstähle in Berlin: Bezirke und Uhrzeiten",
-    subtitle = "Uhrzeit mit den meisten Diebstählen (Uhrzeit Ende) pro Bezirk",
+    subtitle = "Uhrzeit mit den meisten Diebstählen (Uhrzeit Anfang) pro Bezirk",
     caption = "Quelle: Fahrraddiebstahl-Datensatz"
   )
 
-# Interaktive Karte mit Plotly
-interactive_map_reg_uhrzeit <- ggplotly(p_reg)
-# Zeige die interaktive Karte
-interactive_map_reg_uhrzeit
+# Entferne `factor(max_zeit)=` aus dem Tooltip
+interactive_map_reg <- ggplotly(p_reg, tooltip = c("text"))
+interactive_map_reg
 ```
+
+Bei dieser Dauer liegt lediglich ein Fall vor, der um 16 Uhr beginnt und um 20 Uhr endet. Mit dieser Information kann jedoch wenig erreicht werden, da dieses lange Intervall keine zuverlässigen Rückschlüsse auf präferierte Uhrzeiten zulässt.
 
 ## Anzahl der Tatzeiten je Tag/Monat
 
-Diese Kapitel analysiert die Anzahlen der Diebstähle an den unterschiedlichen Tagen und Monaten. Dabei wird das Datum genommen, in dem das Fahrrad sicher gestohlen ist, also die Einträge aus "TATZEIT_ENDE_DATUM".
+In diesem Kapitel werden die Diebstahlszahlen an verschiedenen Tagen und Monaten analysiert. Dabei wird das Datum des Diebstahls, also das "TATZEIT_ENDE_DATUM", berücksichtigt. Die maximale Dauer für einen Diebstahl liegt bei drei Tagen, da längere Zeiträume nicht im Datensatz enthalten sind. Eine Abweichung von drei Tagen ist aus der Perspektive von Jahr und Monat vernachlässigbar. Für die Analyse der präferierten Wochentage sollte jedoch die Dauer auf maximal einen Tag beschränkt werden, da der Diebstahl andernfalls auch an einem anderen Wochentag stattgefunden haben könnte.
 
 ### Präparation des Datensatzen
 
@@ -1380,11 +1530,16 @@ ggplot(datum_anzahl, aes(x = TATZEIT_DATUM_ANZAHL, y = Anzahl, fill = Monat)) +
   ) +
   theme_minimal()
 ```
+Das Diagramm zeigt die absolute Anzahl der Fahrraddiebstähle pro Tag, basierend auf dem gesamten Datensatz. Der Tag wird durch das angegebene Anfangsdatum des jeweiligen Tatzeitraums bestimmt. Es ist deutlich erkennbar, dass die Anzahl der Diebstähle während der Sommermonate ansteigt. Eine plausible Erklärung hierfür ist, dass in dieser Zeit mehr Menschen unterwegs sind, was die Wahrscheinlichkeit von Fahrraddiebstählen erhöht.
 
 ### Absolute Anzahl der Diebstähle je Wochentag + Monat
 
 ```{r}
-fahrraddiebstahl_datensatz_df <- fahrraddiebstahl_datensatz_df %>%
+# Filtere die Datensätze mit DAUER <=24
+fahrraddiebstahl_beschränkte_dauer_df <- fahrraddiebstahl_dauer_df %>%
+  filter(Dauer <= 24)
+
+fahrraddiebstahl_beschränkte_dauer_df <- fahrraddiebstahl_beschränkte_dauer_df %>%
   mutate(
     TATZEIT_DATUM_ANZAHL = as.Date(TATZEIT_ANFANG_DATUM, format = "%d.%m.%Y"), # Konvertierung zu Datum
     Monat = month(TATZEIT_DATUM_ANZAHL, label = TRUE, abbr = TRUE), # Extrahiere den Monat
@@ -1392,7 +1547,7 @@ fahrraddiebstahl_datensatz_df <- fahrraddiebstahl_datensatz_df %>%
   )
 
 # Gruppiere nach `Wochentag` und `Monat` und zähle die Anzahl der Fälle je Wochentag und Monat
-wochentag_monat_anzahl <- fahrraddiebstahl_datensatz_df %>%
+wochentag_monat_anzahl <- fahrraddiebstahl_beschränkte_dauer_df %>%
   filter(!is.na(TATZEIT_DATUM_ANZAHL)) %>% # Filtere NA-Werte
   group_by(Wochentag, Monat) %>% # Gruppiere nach Wochentag und Monat
   summarise(Anzahl = n(), .groups = "drop")
@@ -1408,21 +1563,28 @@ ggplot(wochentag_monat_anzahl, aes(x = Wochentag, y = Anzahl, fill = Monat)) +
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# print(wochentag_monat_anzahl)
 ```
+Das Diagramm zeigt die Anzahl der Fahrraddiebstähle in Abhängigkeit von Wochentag und Monat. Hierbei wurden ausschließlich Tatzeiträume berücksichtigt, die maximal einen Tag umfassten, um eine Vermischung der Wochentage zu vermeiden.
+
+**Saisonalität:** Wie auch im vorherigen Diagramm ist eine saisonale Schwankung der Diebstähle erkennbar. Besonders in den wärmeren Monaten (Mai bis August) steigt die Zahl der Diebstähle, während sie in den kälteren Monaten tendenziell sinkt.
+**Wochentagsabhängigkeit:** Ein eindeutiger Trend hinsichtlich bestimmter Wochentage lässt sich nicht erkennen. Die Anzahl der Diebstähle variiert zwar, jedoch ohne eine klare Tendenz für bestimmte Wochentage.
+**Monatliche Schwankungen:** Auch innerhalb eines Monats gibt es Schwankungen in der Zahl der Diebstähle, jedoch sind diese weniger ausgeprägt als die saisonalen Unterschiede.
 
 ### Durchschnittliche Anzahl der Diebstähle nach Wochentag
 
 ```{r}
-fahrraddiebstahl_datensatz_df <- fahrraddiebstahl_datensatz_df %>%
+# Filtere die Datensätze mit DAUER <=24
+fahrraddiebstahl_beschränkte_dauer_df <- fahrraddiebstahl_dauer_df %>%
+  filter(Dauer <= 24)
+
+fahrraddiebstahl_beschränkte_dauer_df <- fahrraddiebstahl_beschränkte_dauer_df %>%
   mutate(
     TATZEIT_DATUM_ANZAHL = as.Date(TATZEIT_ANFANG_DATUM, format = "%d.%m.%Y"), # Konvertierung zu Datum
     Wochentag = wday(TATZEIT_DATUM_ANZAHL, label = TRUE) # Extrahiere den Wochentag
   )
 
 # Gruppiere nach `Wochentag` und zähle die Anzahl der Fälle je Wochentag über alle Monate hinweg
-wochentag_anzahl <- fahrraddiebstahl_datensatz_df %>%
+wochentag_anzahl <- fahrraddiebstahl_beschränkte_dauer_df %>%
   filter(!is.na(TATZEIT_DATUM_ANZAHL)) %>% # Filtere NA-Werte
   group_by(Wochentag) %>% # Gruppiere nur nach Wochentag
   summarise(Anzahl = n(), .groups = "drop")
@@ -1441,22 +1603,28 @@ ggplot(wochentag_anzahl, aes(x = Wochentag, y = Anzahl, fill = Wochentag)) +
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# print(durchschnitt_wochentag)
 ```
+Das Diagramm zeigt die Anzahl der Fahrraddiebstähle in Bezug auf die jeweiligen Wochentage, wobei ausschließlich Daten berücksichtigt wurden, deren Dauer einen Tag nicht überschreitet.
+
+**Höchste Diebstahlzahlen:** Die meisten Diebstähle treten an den Werktagen Mittwoch und Donnerstag auf.
+**Niedrigste Diebstahlzahlen:** Am Wochenende, insbesondere samstags, sind die Diebstahlzahlen am niedrigsten.
+**Allgemeiner Trend:** Ein deutlicher Unterschied zwischen Werktagen (Montag bis Freitag) und dem Wochenende (Samstag und Sonntag) ist erkennbar. An Werktagen ist die Zahl der Diebstähle insgesamt höher.
+
+Wie bereits in der Analyse der Zeiträume festgestellt, werden viele Fahrraddiebstähle an Wochenendtagen erst in der darauffolgenden Woche bemerkt, was zu der niedrigeren Anzahl an Diebstählen am Wochenende führt.
 
 ### Anzahl der Fälle von Fahrraddiebstählen nach Monat+Jahr
 
 ```{r}
-# Jahr und Monat extrahieren
-fahrraddiebstahl_datensatz_df <- fahrraddiebstahl_datensatz_df %>%
+# Konvertiere TATZEIT_ANFANG_DATUM in Datum und extrahiere Monat und Jahr
+fahrraddiebstahl_beschränkte_dauer_df <- fahrraddiebstahl_beschränkte_dauer_df %>%
   mutate(
+    TATZEIT_DATUM_ANZAHL = as.Date(TATZEIT_ANFANG_DATUM, format = "%d.%m.%Y"),  # Konvertiere TATZEIT_ANFANG_DATUM zu Datum
     Jahr = year(TATZEIT_DATUM_ANZAHL),          # Extrahiere das Jahr
-    Monat = month(TATZEIT_DATUM_ANZAHL, label = TRUE, abbr = TRUE) # Extrahiere den Monat
+    Monat = month(TATZEIT_DATUM_ANZAHL, label = TRUE, abbr = TRUE)  # Extrahiere den Monat
   )
 
 # Daten nach Monat und Jahr aggregieren
-monat_jahr_anzahl <- fahrraddiebstahl_datensatz_df %>%
+monat_jahr_anzahl <- fahrraddiebstahl_beschränkte_dauer_df %>%
   filter(!is.na(TATZEIT_DATUM_ANZAHL)) %>%
   group_by(Jahr, Monat) %>%
   summarise(Anzahl = n(), .groups = "drop")
@@ -1471,28 +1639,208 @@ ggplot(monat_jahr_anzahl, aes(x = Monat, y = Anzahl, fill = factor(Jahr))) +
     y = "Anzahl der Fälle",
     fill = "Jahr"
   ) +
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Optional: für bessere Lesbarkeit der Monatsnamen
+```
+Das Diagramm zeigt die Anzahl der Fahrraddiebstähle pro Monat für die Jahre 2023 und 2024. In Form eines Balkendiagramms wird die monatliche Variation der Diebstahlszahlen veranschaulicht. Die Balken sind nach Jahren farblich unterteilt, um einen direkten Vergleich zu ermöglichen. Für diese Analyse wurde der gesamte Datensatz verwendet, da eine umfassende Datenbasis angestrebt wird. Eine Verzerrung könnte jedoch auftreten, wenn ein erheblicher Teil der Tatzeiten in einem anderen Monat beginnt, als sie enden. Diese potenzielle Verzerrung wird im weiteren Verlauf dieses Unterkapitels genauer untersucht.
 
+**Saisonalität**: Die Zahl der Fahrraddiebstähle weist ausgeprägte saisonale Schwankungen auf. In den wärmeren Monaten, etwa von April bis September, sind die Diebstähle deutlich häufiger, was auf den Einfluss des Wetters auf das Fahrradfahren und die damit verbundene Anfälligkeit für Diebstähle hinweist.
+**Jährlicher Vergleich**: Zwischen den Jahren 2023 und 2024 gibt es auffällige Unterschiede in den Diebstahlzahlen. In Monaten wie Mai und Juni 2024 wurden mehr Fahrräder gestohlen als im Vorjahr, während die Zahlen in anderen Monaten, etwa im Oktober, rückläufig waren. Insgesamt lässt sich jedoch ein ähnlicher saisonaler Verlauf in beiden Jahren erkennen.
+**Höchstwerte**: Die meisten Diebstähle traten in den Monaten Mai, Juni und Juli in beiden Jahren auf.
+**Tiefstwerte**: Die wenigsten Diebstähle wurden in den Wintermonaten (Dezember, Januar, Februar) verzeichnet.
+
+```{r}
+# Filtern der Diebstähle mit Dauer <= 73 Stunden
+fahrraddiebstahl_beschränkte_dauer_df <- fahrraddiebstahl_dauer_df %>%
+  filter(Dauer <= 73)
+
+# Konvertiere TATZEIT_ANFANG und TATZEIT_ENDE in Jahr und Monat
+fahrraddiebstahl_ueber_mehrere_monate <- fahrraddiebstahl_beschränkte_dauer_df %>%
+  mutate(
+    Jahr_Anfang = year(TATZEIT_ANFANG),
+    Monat_Anfang = month(TATZEIT_ANFANG, label = TRUE, abbr = TRUE),
+    Jahr_Ende = year(TATZEIT_ENDE),
+    Monat_Ende = month(TATZEIT_ENDE, label = TRUE, abbr = TRUE)
+  )
+
+# Filtern nach Anfangsmonat != Endmonat und im selben Jahr
+fahrraddiebstahl_ueber_mehrere_monate <- fahrraddiebstahl_ueber_mehrere_monate %>%
+  filter(
+    !is.na(TATZEIT_ENDE),
+    Monat_Anfang != Monat_Ende,
+    Jahr_Anfang == Jahr_Ende
+  )
+
+fahrraddiebstahl_ueber_mehrere_monate <- fahrraddiebstahl_ueber_mehrere_monate %>%
+  mutate(
+    # Berechne, wie viele Stunden der Endmonat bereits überschreitet
+    Stunden_Ende_Monat_ueber = as.numeric(difftime(
+      TATZEIT_ENDE, 
+      as.POSIXct(paste(year(TATZEIT_ENDE), month(TATZEIT_ENDE), 1, sep = "-")), 
+      units = "hours"
+    )),
+    
+    # Subtrahiere die Stunden des Endmonats von der Dauer, um Stunden im Anfangsmonat zu erhalten
+    Stunden_Anfang_Monat = pmax(Dauer - Stunden_Ende_Monat_ueber, 0),  # Sicherstellen, dass keine negativen Stunden auftauchen
+    # Stunden im Endmonat: Die restlichen Stunden, die im Endmonat verbracht wurden
+    Stunden_Ende_Monat = pmax(Stunden_Ende_Monat_ueber, 0)
+  )
+
+# Zähle, wie oft der Diebstahl im Anfangsmonat mehr Stunden hatte und im Endmonat mehr Stunden und anschließend jeweils die Gesamtstunden
+analyse_zeiten <- fahrraddiebstahl_ueber_mehrere_monate %>%
+  summarise(
+    # Zähle, wie oft der Diebstahl im Anfangsmonat mehr Stunden hatte
+    Anfang_Monat_Mehr_Stunden = sum(Stunden_Anfang_Monat > Stunden_Ende_Monat, na.rm = TRUE),
+    # Zähle, wie oft der Diebstahl im Endmonat mehr Stunden hatte
+    End_Monat_Mehr_Stunden = sum(Stunden_Ende_Monat > Stunden_Anfang_Monat, na.rm = TRUE),
+    # Berechne die Gesamtstunden für die Fälle, in denen im Anfangsmonat mehr Stunden verbracht wurden
+    Gesamtstunden_Anfang_Monat = sum(Stunden_Anfang_Monat[Stunden_Anfang_Monat > Stunden_Ende_Monat], na.rm = TRUE),
+    # Berechne die Gesamtstunden für die Fälle, in denen im Endmonat mehr Stunden verbracht wurden
+    Gesamtstunden_End_Monat = sum(Stunden_Ende_Monat[Stunden_Ende_Monat > Stunden_Anfang_Monat], na.rm = TRUE)
+  )
+
+# Ausgabe der Analyse als knitr-Tabelle
+kable(analyse_zeiten, caption = "Analyse der Stundenverteilung bei Diebstählen über zwei Monate", format = "markdown")
 ```
 
-In dem Balkendiagramm wird ersichtlich, dass die Fahrradiebstähle im Jahr 2024 in den Monaten Januar bis September geringer ausfallen. Die Einzeige Ausnahme stellt der Monat Mai dar.
+Das Ergebnis zeigt, dass die Unterschiede signifikant sind. Es gibt fast doppelt so viele Stunden im anderen Monat, die zu Beginn erfasst wurden, im Vergleich zu denen, die in den folgenden Monat übergehen. Trotz dieser Verlagerung bleibt die Stundenanzahl im ursprünglichen Monat höher. Eine Tatzeitdauer von nur 3 Tagen ist daher nicht ausreichend, um diese Unterschiede angemessen zu erfassen. Die nachfolgende Analyse basiert darauf, die geeignete Tatzeitdauer zu ermitteln, um die Unterschiede präzise zu erfassen und eine aussagekräftige Auswertung zu gewährleisten.
+
+```{r}
+# Filtern der Diebstähle mit Dauer <= 24 Stunden
+fahrraddiebstahl_beschränkte_dauer_df <- fahrraddiebstahl_dauer_df %>%
+  filter(Dauer <= 24)
+
+# Konvertiere TATZEIT_ANFANG und TATZEIT_ENDE in Jahr und Monat
+fahrraddiebstahl_ueber_mehrere_monate <- fahrraddiebstahl_beschränkte_dauer_df %>%
+  mutate(
+    Jahr_Anfang = year(TATZEIT_ANFANG),
+    Monat_Anfang = month(TATZEIT_ANFANG, label = TRUE, abbr = TRUE),
+    Jahr_Ende = year(TATZEIT_ENDE),
+    Monat_Ende = month(TATZEIT_ENDE, label = TRUE, abbr = TRUE)
+  )
+
+# Filtern nach Anfangsmonat != Endmonat und im selben Jahr
+fahrraddiebstahl_ueber_mehrere_monate <- fahrraddiebstahl_ueber_mehrere_monate %>%
+  filter(
+    !is.na(TATZEIT_ENDE),
+    Monat_Anfang != Monat_Ende,
+    Jahr_Anfang == Jahr_Ende
+  )
+
+fahrraddiebstahl_ueber_mehrere_monate <- fahrraddiebstahl_ueber_mehrere_monate %>%
+  mutate(
+    # Berechne, wie viele Stunden der Endmonat bereits überschreitet
+    Stunden_Ende_Monat_ueber = as.numeric(difftime(
+      TATZEIT_ENDE, 
+      as.POSIXct(paste(year(TATZEIT_ENDE), month(TATZEIT_ENDE), 1, sep = "-")), 
+      units = "hours"
+    )),
+    
+    # Subtrahiere die Stunden des Endmonats von der Dauer, um Stunden im Anfangsmonat zu erhalten
+    Stunden_Anfang_Monat = pmax(Dauer - Stunden_Ende_Monat_ueber, 0),  # Sicherstellen, dass keine negativen Stunden auftauchen
+    # Stunden im Endmonat: Die restlichen Stunden, die im Endmonat verbracht wurden
+    Stunden_Ende_Monat = pmax(Stunden_Ende_Monat_ueber, 0)
+  )
+
+# Zähle, wie oft der Diebstahl im Anfangsmonat mehr Stunden hatte und im Endmonat mehr Stunden und anschließend jeweils die Gesamtstunden
+analyse_zeiten <- fahrraddiebstahl_ueber_mehrere_monate %>%
+  summarise(
+    # Zähle, wie oft der Diebstahl im Anfangsmonat mehr Stunden hatte
+    Anfang_Monat_Mehr_Stunden = sum(Stunden_Anfang_Monat > Stunden_Ende_Monat, na.rm = TRUE),
+    # Zähle, wie oft der Diebstahl im Endmonat mehr Stunden hatte
+    End_Monat_Mehr_Stunden = sum(Stunden_Ende_Monat > Stunden_Anfang_Monat, na.rm = TRUE),
+    # Berechne die Gesamtstunden für die Fälle, in denen im Anfangsmonat mehr Stunden verbracht wurden
+    Gesamtstunden_Anfang_Monat = sum(Stunden_Anfang_Monat[Stunden_Anfang_Monat > Stunden_Ende_Monat], na.rm = TRUE),
+    # Berechne die Gesamtstunden für die Fälle, in denen im Endmonat mehr Stunden verbracht wurden
+    Gesamtstunden_End_Monat = sum(Stunden_Ende_Monat[Stunden_Ende_Monat > Stunden_Anfang_Monat], na.rm = TRUE)
+  )
+
+# Ausgabe der Analyse als knitr-Tabelle
+kable(analyse_zeiten, caption = "Analyse der Stundenverteilung bei Diebstählen über zwei Monate", format = "markdown")
+```
+
+Bei einer Tatzeitdauer von einem Tag sind die Unterschiede ebenfalls signifikant und sogar anteilig noch ausgeprägter (Faktor 5). Dies deutet darauf hin, dass diese Zeitspanne ebenfalls nicht ausreicht, um die tatsächlichen Schwankungen adäquat abzubilden.
+
+```{r}
+# Filtern der Diebstähle mit Dauer <= 24 Stunden
+fahrraddiebstahl_beschränkte_dauer_df <- fahrraddiebstahl_dauer_df %>%
+  filter(Dauer <= 6)
+
+# Konvertiere TATZEIT_ANFANG und TATZEIT_ENDE in Jahr und Monat
+fahrraddiebstahl_ueber_mehrere_monate <- fahrraddiebstahl_beschränkte_dauer_df %>%
+  mutate(
+    Jahr_Anfang = year(TATZEIT_ANFANG),
+    Monat_Anfang = month(TATZEIT_ANFANG, label = TRUE, abbr = TRUE),
+    Jahr_Ende = year(TATZEIT_ENDE),
+    Monat_Ende = month(TATZEIT_ENDE, label = TRUE, abbr = TRUE)
+  )
+
+# Filtern nach Anfangsmonat != Endmonat und im selben Jahr
+fahrraddiebstahl_ueber_mehrere_monate <- fahrraddiebstahl_ueber_mehrere_monate %>%
+  filter(
+    !is.na(TATZEIT_ENDE),
+    Monat_Anfang != Monat_Ende,
+    Jahr_Anfang == Jahr_Ende
+  )
+
+fahrraddiebstahl_ueber_mehrere_monate <- fahrraddiebstahl_ueber_mehrere_monate %>%
+  mutate(
+    # Berechne, wie viele Stunden der Endmonat bereits überschreitet
+    Stunden_Ende_Monat_ueber = as.numeric(difftime(
+      TATZEIT_ENDE, 
+      as.POSIXct(paste(year(TATZEIT_ENDE), month(TATZEIT_ENDE), 1, sep = "-")), 
+      units = "hours"
+    )),
+    
+    # Subtrahiere die Stunden des Endmonats von der Dauer, um Stunden im Anfangsmonat zu erhalten
+    Stunden_Anfang_Monat = pmax(Dauer - Stunden_Ende_Monat_ueber, 0),  # Sicherstellen, dass keine negativen Stunden auftauchen
+    # Stunden im Endmonat: Die restlichen Stunden, die im Endmonat verbracht wurden
+    Stunden_Ende_Monat = pmax(Stunden_Ende_Monat_ueber, 0)
+  )
+
+
+# Zähle, wie oft der Diebstahl im Anfangsmonat mehr Stunden hatte und im Endmonat mehr Stunden und anschließend jeweils die Gesamtstunden
+analyse_zeiten <- fahrraddiebstahl_ueber_mehrere_monate %>%
+  summarise(
+    # Zähle, wie oft der Diebstahl im Anfangsmonat mehr Stunden hatte
+    Anfang_Monat_Mehr_Stunden = sum(Stunden_Anfang_Monat > Stunden_Ende_Monat, na.rm = TRUE),
+    # Zähle, wie oft der Diebstahl im Endmonat mehr Stunden hatte
+    End_Monat_Mehr_Stunden = sum(Stunden_Ende_Monat > Stunden_Anfang_Monat, na.rm = TRUE),
+    # Berechne die Gesamtstunden für die Fälle, in denen im Anfangsmonat mehr Stunden verbracht wurden
+    Gesamtstunden_Anfang_Monat = sum(Stunden_Anfang_Monat[Stunden_Anfang_Monat > Stunden_Ende_Monat], na.rm = TRUE),
+    # Berechne die Gesamtstunden für die Fälle, in denen im Endmonat mehr Stunden verbracht wurden
+    Gesamtstunden_End_Monat = sum(Stunden_Ende_Monat[Stunden_Ende_Monat > Stunden_Anfang_Monat], na.rm = TRUE)
+  )
+
+# Ausgabe der Analyse als knitr-Tabelle
+kable(analyse_zeiten, caption = "Analyse der Stundenverteilung bei Diebstählen über zwei Monate", format = "markdown")
+```
+
+Bei einer Tatzeitdauer von ≤ 6 Stunden sind die Unterschiede ebenfalls präsent und, anteilig betrachtet, sogar fast um den Faktor 4 ausgeprägter. Dies deutet darauf hin, dass eine so kurze Zeitspanne möglicherweise nicht ausreicht, um die tatsächlichen Schwankungen korrekt abzubilden. Da die Einteilung in noch kleinere Tatzeiträume den Datensatz erheblich verkleinern würde, erscheint ein Tatzeitraum von ≤ 73 Stunden als die beste Wahl, um eine genauere und aussagekräftigere Analyse zu ermöglichen. Somit ist das oben dargestellte Balkendiagramm mit der Tatzeitdauereinteilung von ≤ 73 Stunden für den Datensatz am besten geeignet, da es die Verteilung der präferierten Tatzeiten zwar mit einer kleinen Verzerrung, aber dennoch, wie die Analyse zeigte, am besten abbildet.
 
 ### Durchschnittliche Anzahl der Fälle von Fahrraddiebstählen nach Monat
 
-In diesem Unterkapitel wird die Durchschnittliche Anzahl der Monate gezeigt. Da der Datensatz aus zwei Jahren besteht, werden die Anzähle durch zwei dividiert. Die Monate Oktober, November sowie Dezember bilden dabei eine Ausnahme, da im Jahr 2024 die Daten nur bis einschließlich 18.Oktober.2024 vorhanden sind.
+In diesem Unterkapitel wird abschließend zur Analyse der bevorzugten Tage und Monate die durchschnittliche Anzahl der Diebstähle pro Monat dargestellt. Da der Datensatz aus zwei Jahren besteht, werden die Diebstahlzahlen durch zwei geteilt. Eine Ausnahme bilden die Monate Oktober, November und Dezember, da für das Jahr 2024 nur Daten bis zum 18. Oktober vorliegen. Diese Erkenntnisse wurden durch die Betrachtung des Datensatzes in der Anwendung Excel gewonnen.
 
 ```{r}
+# Konvertiere TATZEIT_ANFANG_DATUM zu Datum und extrahiere den Monat
+fahrraddiebstahl_datensatz_df <- fahrraddiebstahl_datensatz_df %>%
+  mutate(
+    TATZEIT_DATUM_ANZAHL = as.Date(TATZEIT_ANFANG_DATUM, format = "%d.%m.%Y")  # Konvertiere TATZEIT_ANFANG_DATUM zu Datum
+  )
+
 # Monatsspezifische Anpassungen der Anzahl
 monat_anzahl <- fahrraddiebstahl_datensatz_df %>%
   filter(!is.na(TATZEIT_DATUM_ANZAHL)) %>%
+  mutate(Monat = month(TATZEIT_DATUM_ANZAHL, label = TRUE, abbr = TRUE)) %>% # Extrahiere Monat
   group_by(Monat) %>%
   summarise(Anzahl = n(), .groups = "drop")
 
-# Halbiere die Anzahl der Fälle für Januar bis Oktober, da die ANzahl aus zwei Jahr zustande kommt
+# Halbiere die Anzahl der Fälle für Januar bis Oktober, da die Anzahl aus zwei Jahren stammt
 monat_anzahl <- monat_anzahl %>%
   mutate(Anzahl = case_when(
     Monat %in% c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct") ~ 
-      ifelse(Monat == "Oct", Anzahl / (1 + 18 / 31), Anzahl / 2),
+      ifelse(Monat == "Oct", Anzahl / (1 + 18 / 31), Anzahl / 2), # Spezielle Berechnung für Oktober
     TRUE ~ Anzahl
   ))
 
@@ -1500,10 +1848,19 @@ monat_anzahl <- monat_anzahl %>%
 ggplot(monat_anzahl, aes(x = Monat, y = Anzahl, fill = Monat)) +
   geom_bar(stat = "identity") +
   labs(
-    title = "Durchschnitteliche Anzahl an Fällen von Fahrraddiebstählen je Monat",
+    title = "Durchschnittliche Anzahl an Fällen von Fahrraddiebstählen je Monat",
     x = "Monat",
     y = "Anzahl der Fälle",
     fill = "Monat"
   ) +
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Optional: für bessere Lesbarkeit der Monatsnamen
 ```
+Das Diagramm zeigt die durchschnittliche Anzahl von Fahrraddiebstählen pro Monat. In Form eines Balkendiagramms veranschaulicht die Höhe jedes Balkens die durchschnittliche Diebstahlzahl für einen bestimmten Monat. Die Balken sind farblich nach Monaten unterteilt, wodurch saisonale Schwankungen auf einen Blick erkennbar sind. Auch hier wurde der gesamte Datensatz verwendet, da die zugrunde liegende Begründung für diese Analyse ebenso gilt. Es handelt sich um die gleichen analysierten Daten, lediglich aufbereitet durch die Berechnung von Durchschnittswerten.
+
+**Saisonalität**: Auch hier sind deutliche Schwankungen sichtbar.
+**Höchstwerte**: Der Mai weist die höchste Anzahl an Fahrraddiebstählen auf.
+**Tiefstwerte**: Die geringsten Diebstahlszahlen treten in den Wintermonaten (Dezember, Januar, Februar) auf.
+
+## Fazit der präferierten Zeiten
+Abschließend lässt sich zum Kapitel der präferierten Zeiten festhalten, dass die meisten Fahrraddiebstähle am Nachmittag stattfinden. Zudem ist die Anzahl der Diebstähle an Werktagen deutlich höher. In der warmen Saison steigen die Diebstahlzahlen erheblich an.
