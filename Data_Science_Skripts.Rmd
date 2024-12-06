@@ -7,6 +7,9 @@ output:
     toc_depth: 2
   word_document: default
   pdf_document: default
+editor_options: 
+  markdown: 
+    wrap: sentence
 ---
 
 **Vorkonfigurationen:**
@@ -22,13 +25,15 @@ library(xml2)
 library(lubridate)
 library(treemap)
 library(knitr)
+library(ggiraph)
 ```
 
 # Analyse des Datensatzes
 
 ## Datensatz laden
 
-Für die Datenauswertung werden zwei Datensätze geladen. Zum einen die csv mit dem Namen "Fahrraddiebstahl in Berlin 2023 - 2024.csv".
+Für die Datenauswertung werden zwei Datensätze geladen.
+Zum einen die csv mit dem Namen "Fahrraddiebstahl in Berlin 2023 - 2024.csv".
 
 ```{r}
 # Load the CSV dataset with ISO-8859-1 encoding
@@ -65,11 +70,14 @@ str(fahrraddiebstahl_datensatz)
 
 6.  **LOR**: Kennung des Planungsraums (8-stellig) (vvxxyyzz –\> vv=Bezirksnummer, xx=Prognosebereich, yy=Bezirksregion, zz=Planungsraum
 
-7.  **SCHADENSHOEHE**: Wert des entwendeten Gutes in Euro (Summenangabe). Bei Kellereinbrüchen inkludiert dieser Wert alle gestohlenen Gegenstände, wie Fahrräder und andere Objekte. Keine Angabe bei reinem Sachschaden.
+7.  **SCHADENSHOEHE**: Wert des entwendeten Gutes in Euro (Summenangabe).
+    Bei Kellereinbrüchen inkludiert dieser Wert alle gestohlenen Gegenstände, wie Fahrräder und andere Objekte.
+    Keine Angabe bei reinem Sachschaden.
 
 8.  **VERSUCH**: Gibt an, ob es sich um einen Versuch handelt (Mögliche Werte: "ja"/"nein").
 
-9.  **ART_DES_FAHRRADS**: Typ des gestohlenen Fahrrads (z. B. Herrenrad, Damenrad). Bei mehreren Fahrrädern unterschiedlichen Typs wird der Wert "diverse Fahrräder" ausgegeben.
+9.  **ART_DES_FAHRRADS**: Typ des gestohlenen Fahrrads (z. B. Herrenrad, Damenrad).
+    Bei mehreren Fahrrädern unterschiedlichen Typs wird der Wert "diverse Fahrräder" ausgegeben.
 
 10. **DELIKT**: Gruppierung des Delikts (Mögliche Werte: "Fahrraddiebstahl" oder "Keller- und Bodeneinbruch").
 
@@ -85,13 +93,18 @@ str(fahrraddiebstahl_datensatz)
 
 ### Zusätzliche Anmerkungen
 
-Der Datensatz ermöglicht keine direkte Ermittlung der exakten Anzahl gestohlener Fahrräder. Die im Rahmen der Datenanalyse ermittelten Zahlen zu Diebstählen sind daher nicht gleichbedeutend mit der tatsächlichen Anzahl der gestohlenen Fahrräder.
+Der Datensatz ermöglicht keine direkte Ermittlung der exakten Anzahl gestohlener Fahrräder.
+Die im Rahmen der Datenanalyse ermittelten Zahlen zu Diebstählen sind daher nicht gleichbedeutend mit der tatsächlichen Anzahl der gestohlenen Fahrräder.
 
-Der Datensatz enthält einen Zeitraum, der den vermuteten Zeitpunkt eines Fahrraddiebstahls angibt. Dieser Zeitraum wurde so gewählt, dass er maximal 72 Stunden umfasst, wie in der Beschreibung des Datensatzes vermerkt. Dennoch kann mit dem Datensatz grobe Kenntnisse über die Dauer und bevorzugte Zeiten von Diebstählen erarbeitet werden. Diese sollten jedoch aus dem zuvor genannten Grund in der Interpretation mit Vorsicht behandelt werden.
+Der Datensatz enthält einen Zeitraum, der den vermuteten Zeitpunkt eines Fahrraddiebstahls angibt.
+Dieser Zeitraum wurde so gewählt, dass er maximal 72 Stunden umfasst, wie in der Beschreibung des Datensatzes vermerkt.
+Dennoch kann mit dem Datensatz grobe Kenntnisse über die Dauer und bevorzugte Zeiten von Diebstählen erarbeitet werden.
+Diese sollten jedoch aus dem zuvor genannten Grund in der Interpretation mit Vorsicht behandelt werden.
 
 # Anzahl der Diebstähle
 
-Dieses Kapitel beschreibt die Anzahl der Diebstählen absolut und durchschnittlich (absolute Anzahl/Einwohnerzahl). Dabei verwendet der zweite Teil Geo-Daten (Quelle:"<https://daten.odis-berlin.de/de/dataset/lor_bezirksregionen_2021/>") und ordnet die Werte den Bezirken/Bezirksregionen über die LOR zu.
+Dieses Kapitel beschreibt die Anzahl der Diebstählen absolut und durchschnittlich (absolute Anzahl/Einwohnerzahl).
+Dabei verwendet der zweite Teil Geo-Daten (Quelle:"<https://daten.odis-berlin.de/de/dataset/lor_bezirksregionen_2021/>") und ordnet die Werte den Bezirken/Bezirksregionen über die LOR zu.
 
 ## Absolute Anzahl
 
@@ -114,11 +127,14 @@ tabelle_versuche <- table(fahrraddiebstahl_datensatz['VERSUCH'])
 kable(tabelle_versuche, caption = "Tabelle der Versuche")
 ```
 
-In den meisten Fällen der gemeldeten Fahrraddiebstähle war der Diebstahl erfolgreich, während nur in 169 Fällen der Versuch scheiterte. Der Unterschied könnte jedoch auch darin liegen, dass die betroffene Person den Diebstahlsversuch nicht bemerkt oder nicht gemeldet hat, da die Fahrräder weiterhin vorhanden waren und kein durch den Versuch verursachter Schaden festgestellt wurde.
+In den meisten Fällen der gemeldeten Fahrraddiebstähle war der Diebstahl erfolgreich, während nur in 169 Fällen der Versuch scheiterte.
+Der Unterschied könnte jedoch auch darin liegen, dass die betroffene Person den Diebstahlsversuch nicht bemerkt oder nicht gemeldet hat, da die Fahrräder weiterhin vorhanden waren und kein durch den Versuch verursachter Schaden festgestellt wurde.
 
 ## Anzahl der Diebstähle im Zusammenhang mit den Bezirken/Bezirksregionen
 
-Dieses Unterkapitel verknüpft den Datensatz mit den Geo-Daten (Quelle: <https://daten.odis-berlin.de/de/dataset/lor_bezirksregionen_2021>) und der Datei "LOR-Räume mit Kontextindikatoren.xlsx". Die kombinierten Daten werden in interaktiven Karten und Balkendiagrammen visualisiert, um eine übersichtliche Darstellung auch bei großen Datensätzen zu gewährleisten. Durch hoverbare Elemente können detaillierte Informationen zu den einzelnen Werten und deren Beschreibungen abgerufen werden, ohne die Gesamtübersicht zu beeinträchtigen.
+Dieses Unterkapitel verknüpft den Datensatz mit den Geo-Daten (Quelle: <https://daten.odis-berlin.de/de/dataset/lor_bezirksregionen_2021>) und der Datei "LOR-Räume mit Kontextindikatoren.xlsx".
+Die kombinierten Daten werden in interaktiven Karten und Balkendiagrammen visualisiert, um eine übersichtliche Darstellung auch bei großen Datensätzen zu gewährleisten.
+Durch hoverbare Elemente können detaillierte Informationen zu den einzelnen Werten und deren Beschreibungen abgerufen werden, ohne die Gesamtübersicht zu beeinträchtigen.
 
 ### LOR-Datensatz aufbereiten
 
@@ -166,7 +182,8 @@ lor_df:
 
 -   **Ausländerinnen und Ausländer**: Prozentsatz der Ausländer im Vergleich zu allen Einwohnern am 31.12.2016.
 
--   **Nicht-EU-Ausländerinnen und Nicht-EU-Ausländer**: Prozentsatz der Nicht-EU-Ausländer im Vergleich zu allen Ausländern am 31.12.2016. \### Präpariere die Karten
+-   **Nicht-EU-Ausländerinnen und Nicht-EU-Ausländer**: Prozentsatz der Nicht-EU-Ausländer im Vergleich zu allen Ausländern am 31.12.2016.
+    ### Präpariere die Karten
 
 berlin_map
 
@@ -184,11 +201,16 @@ berlin_map
 
 ### Präparation absolute Anzahl der Fahrradiebstähle
 
-Die Kombination der Geodaten beschränkt sich auf die Ebenen „Bezirk“ und „Bezirksregion“, da die Planungsräume nicht in der Karte dargestellt sind. Die Aufgabenstellung nennt zudem nur explizit die Untersuchung nach Bezirk und Bezirksregion.
+Die Kombination der Geodaten beschränkt sich auf die Ebenen „Bezirk“ und „Bezirksregion“, da die Planungsräume nicht in der Karte dargestellt sind.
+Die Aufgabenstellung nennt zudem nur explizit die Untersuchung nach Bezirk und Bezirksregion.
 
-Die Verbindung zwischen den Geodaten und den anderen beiden Datensätzen erfolgt über die „BZR_ID“, die den ersten sechs Ziffern der „LOR“ entspricht. Um die Verknüpfung herzustellen, müssen in den Datensätzen die letzten beiden Ziffern der „LOR“ entfernt werden, sodass diese nur noch die Länge von sechs Ziffern hat. Anschließend werden die Nummern zusammengeführt, sofern sie durch die Operation dieselbe Nummer aufweisen.
+Die Verbindung zwischen den Geodaten und den anderen beiden Datensätzen erfolgt über die „BZR_ID“, die den ersten sechs Ziffern der „LOR“ entspricht.
+Um die Verknüpfung herzustellen, müssen in den Datensätzen die letzten beiden Ziffern der „LOR“ entfernt werden, sodass diese nur noch die Länge von sechs Ziffern hat.
+Anschließend werden die Nummern zusammengeführt, sofern sie durch die Operation dieselbe Nummer aufweisen.
 
-Es gibt Bezirksregionen, die denselben Namen tragen, jedoch in unterschiedlichen Bezirken existieren. Um spätere Konflikte zu vermeiden, werden doppelte Einträge herausgefiltert. Dann wird der Name der Bezirksregion so angepasst, dass die zugehörige Bezirksnummer an den Namen angehängt wird, um eine eindeutige Zuordnung zu gewährleisten.
+Es gibt Bezirksregionen, die denselben Namen tragen, jedoch in unterschiedlichen Bezirken existieren.
+Um spätere Konflikte zu vermeiden, werden doppelte Einträge herausgefiltert.
+Dann wird der Name der Bezirksregion so angepasst, dass die zugehörige Bezirksnummer an den Namen angehängt wird, um eine eindeutige Zuordnung zu gewährleisten.
 
 ```{r}
 # Bezirksregion
@@ -249,14 +271,18 @@ Die nachfolgenden Grafiken zeigen die absoluten Anzahlen der gemeldeten Fahrradd
 ### Bezirksregion
 
 ```{r}
-# Basis-Karte erstellen
-p_reg <- ggplot(data = berlin_map_bezirksregion) +
-  geom_sf(aes(
+# Lade ggiraph
+library(ggiraph)
+
+# Erstelle die interaktive Karte
+p_reg_ggiraph <- ggplot(data = berlin_map_bezirksregion) +
+  geom_sf_interactive(aes(
     fill = anzahl_bezirksregion,  # Füllung basierend auf numerischen Daten
-    text = paste(
+    tooltip = paste(
       "Bezirksregion:", BZR_NAME, "<br>",
       "Fälle:", anzahl_bezirksregion
-    ) # Tooltip-Inhalt
+    ),  # Tooltip-Inhalt
+    data_id = BZR_NAME  # Für interaktive Auswahl (falls benötigt)
   ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
   theme_minimal() +
@@ -266,21 +292,32 @@ p_reg <- ggplot(data = berlin_map_bezirksregion) +
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
-# Interaktive Karte mit Plotly
-interactive_map_reg <- ggplotly(p_reg, tooltip = "text")
+# Erstelle die ggiraph-Visualisierung
+interactive_map_reg <- girafe(ggobj = p_reg_ggiraph)
+
+# Passe ggiraph-Einstellungen an (optional)
+interactive_map_reg <- girafe_options(
+  interactive_map_reg,
+  opts_hover(css = "fill:grey;cursor:pointer;"),
+  opts_tooltip(css = "background-color:white;color:black;padding:5px;border-radius:5px;")
+)
 
 # Zeige die interaktive Karte
 interactive_map_reg
 ```
 
-Im Rahmen der Datenanalyse werden häufig Karten zur Visualisierung eingesetzt, da sie den Bezug zwischen den Geo-Daten und dem Datensatz anschaulich darstellen. Da Kartengrafiken die Unterschiede in den Werten meist nur durch Farbverläufe anzeigen, werden sie durch ergänzende Diagramme ergänzt, um die Daten noch präziser zu veranschaulichen.
+Im Rahmen der Datenanalyse werden häufig Karten zur Visualisierung eingesetzt, da sie den Bezug zwischen den Geo-Daten und dem Datensatz anschaulich darstellen.
+Da Kartengrafiken die Unterschiede in den Werten meist nur durch Farbverläufe anzeigen, werden sie durch ergänzende Diagramme ergänzt, um die Daten noch präziser zu veranschaulichen.
 
-Die Karten verdeutlichen die Wertunterschiede durch Farbtonvariationen, wobei Blau für niedrige Werte und Rot für hohe Werte steht. Dieses Farbkonzept bleibt konsistent und wird in allen folgenden Karten beibehalten, die ebenfalls diese Farbvariation nutzen.
+Die Karten verdeutlichen die Wertunterschiede durch Farbtonvariationen, wobei Blau für niedrige Werte und Rot für hohe Werte steht.
+Dieses Farbkonzept bleibt konsistent und wird in allen folgenden Karten beibehalten, die ebenfalls diese Farbvariation nutzen.
 
-Die Kartengrafik zeigt, dass die Anzahl der gemeldeten Fahrraddiebstähle besonders im Stadtzentrum am höchsten ist, was durch die rötliche Farbgebung in dieser Region verdeutlicht wird. Besonders auffällig sind die Bezirke "Tempelhofer Vorstadt" mit insgesamt 1470 Fällen und "Alexanderplatz" mit 1386 gemeldeten Diebstählen, die in der Grafik eine markante rote Färbung aufweisen. Im Gegensatz dazu haben die Bezirke "Schmöckwitz" mit nur 10 und "Müggelheim" mit 20 Fällen deutlich weniger Diebstähle, die durch einen tiefen Blauton hervorgehoben werden.
+Die Kartengrafik zeigt, dass die Anzahl der gemeldeten Fahrraddiebstähle besonders im Stadtzentrum am höchsten ist, was durch die rötliche Farbgebung in dieser Region verdeutlicht wird.
+Besonders auffällig sind die Bezirke "Tempelhofer Vorstadt" mit insgesamt 1470 Fällen und "Alexanderplatz" mit 1386 gemeldeten Diebstählen, die in der Grafik eine markante rote Färbung aufweisen.
+Im Gegensatz dazu haben die Bezirke "Schmöckwitz" mit nur 10 und "Müggelheim" mit 20 Fällen deutlich weniger Diebstähle, die durch einen tiefen Blauton hervorgehoben werden.
 
 ```{r}
-# Bezirksregionen sortieren nach der Anzahl der Fahrraddiebstähle
+# Bezirksregionen nach der Anzahl der Fahrraddiebstähle sortieren
 berlin_map_bezirksregion <- berlin_map_bezirksregion %>%
   arrange(anzahl_bezirksregion)
 
@@ -297,20 +334,25 @@ max_val <- max(berlin_map_bezirksregion$anzahl_bezirksregion, na.rm = TRUE)
 
 # Aufgeteilter Plot mit interaktiven Diagrammen
 interactive_plots_bezirksregion_anzahl <- lapply(1:3, function(i) {
-  ggplotly(
-    ggplot(split_data_bezirksregion[[i]], aes(x = BZR_NAME, y = anzahl_bezirksregion, fill = anzahl_bezirksregion, 
-                                              text = paste("Bezirksregion: ", BZR_NAME, "<br>Fälle: ", anzahl_bezirksregion))) +
-      geom_bar(stat = "identity") +
-      scale_fill_gradient(low = "blue", high = "red", limits = c(min_val, max_val)) +
-      labs(
-        title = paste("Absolute Anzahl der Fahrraddiebstähle je Bezirksregion (Teil", i, ")"),
-        x = NULL,  # Entfernt die Beschriftung der x-Achse
-        y = "Anzahl der Fälle"
-      ) +
-      theme_minimal() +
-      theme(axis.text.x = element_blank(),  # Entfernt die x-Achsen-Beschriftung
-            axis.ticks.x = element_blank()) # Entfernt die x-Achsen-Ticks
-  )
+  p <- ggplot(split_data_bezirksregion[[i]], aes(
+      x = BZR_NAME, 
+      y = anzahl_bezirksregion, 
+      fill = anzahl_bezirksregion, 
+      tooltip = paste("Bezirksregion: ", BZR_NAME, "<br>Fälle: ", anzahl_bezirksregion)
+    )) +
+    geom_bar_interactive(stat = "identity") +
+    scale_fill_gradient(low = "blue", high = "red", limits = c(min_val, max_val)) +
+    labs(
+      title = paste("Absolute Anzahl der Fahrraddiebstähle je Bezirksregion (Teil", i, ")"),
+      x = NULL,  # Entfernt die Beschriftung der x-Achse
+      y = "Anzahl der Fälle"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_blank(),  # Entfernt die x-Achsen-Beschriftung
+          axis.ticks.x = element_blank()) # Entfernt die x-Achsen-Ticks
+  
+  # Rückgabe des interaktiven ggplot-Objekts
+  girafe(ggobj = p)
 })
 
 # Ergebnisse anzeigen
@@ -319,16 +361,19 @@ interactive_plots_bezirksregion_anzahl[[2]]
 interactive_plots_bezirksregion_anzahl[[3]]
 ```
 
-Das Diagramm zeigt die gleichen Ergebnisse wie die Karte, jedoch in Form eines Balkendiagramms. Die Balken sind aufsteigend nach der Anzahl der Fälle sortiert, wodurch die Unterschiede zwischen den Regionen deutlich hervortreten. Der Farbverlauf der Karte, der die Werte von Blau (niedrig) bis Rot (hoch) darstellt, wurde auch im Balkendiagramm beibehalten.
+Das Diagramm zeigt die gleichen Ergebnisse wie die Karte, jedoch in Form eines Balkendiagramms.
+Die Balken sind aufsteigend nach der Anzahl der Fälle sortiert, wodurch die Unterschiede zwischen den Regionen deutlich hervortreten.
+Der Farbverlauf der Karte, der die Werte von Blau (niedrig) bis Rot (hoch) darstellt, wurde auch im Balkendiagramm beibehalten.
 
 #### Bezirk
 
 ```{r}
-# Interaktive Karte nur Bezirk
-p_bez <- ggplot(data = berlin_map_bezirk) +
-  geom_sf(aes(
-    fill = anzahl_bezirk,
-    text = paste0("Bezirk: ", BEZ, "<br>Fälle: ", anzahl_bezirk)
+# Erstelle die interaktive Bezirkskarte
+p_bez_ggiraph <- ggplot(data = berlin_map_bezirk) +
+  geom_sf_interactive(aes(
+    fill = anzahl_bezirk,  # Füllung basierend auf den Bezirksdaten
+    tooltip = paste0("Bezirk: ", BEZ, "<br>Fälle: ", anzahl_bezirk),  # Tooltip-Inhalt
+    data_id = BEZ  # Interaktive ID für Bezirke
   ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
   theme_minimal() +
@@ -338,8 +383,15 @@ p_bez <- ggplot(data = berlin_map_bezirk) +
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
-# Interaktive Version der Karte
-interactive_map_bez <- ggplotly(p_bez)
+# Erstelle die ggiraph-Visualisierung
+interactive_map_bez <- girafe(ggobj = p_bez_ggiraph)
+
+# Passe ggiraph-Einstellungen an (optional)
+interactive_map_bez <- girafe_options(
+  interactive_map_bez,
+  opts_hover(css = "fill:grey;cursor:pointer;"),
+  opts_tooltip(css = "background-color:white;color:black;padding:5px;border-radius:5px;")
+)
 
 # Zeige die interaktive Karte
 interactive_map_bez
@@ -354,24 +406,35 @@ berlin_map_bezirk <- berlin_map_bezirk %>%
 # Konvertiere die BEZ-Spalte in einen Faktor mit der aufsteigenden Reihenfolge der anzahl_bezirk
 berlin_map_bezirk$BEZ <- factor(berlin_map_bezirk$BEZ, levels = berlin_map_bezirk$BEZ)
 
-# Erstelle das Plot mit Farbverlauf
-ggplot(berlin_map_bezirk, aes(x = BEZ, y = anzahl_bezirk, fill = anzahl_bezirk)) +
-  geom_bar(stat = "identity", position = "dodge") +
+# Erstelle das Plot mit ggiraph
+p <- ggplot(berlin_map_bezirk, aes(x = BEZ, y = anzahl_bezirk, fill = anzahl_bezirk, 
+                                   tooltip = paste("Bezirk: ", BEZ, "<br>Fälle: ", anzahl_bezirk))) +
+  geom_bar_interactive(stat = "identity", position = "dodge") +
   scale_fill_gradient(low = "blue", high = "red") +  # Farbverlauf
+  scale_x_discrete(labels = berlin_map_bezirk$BEZ) +  # Bezirknummer als x-Achsen-Beschriftung
   labs(
     title = "Absolute Anzahl der Fahrraddiebstähle je Bezirk",
     x = "Bezirk",
     y = "Anzahl der Fälle"
   ) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Dreht die x-Achsen-Beschriftung für bessere Lesbarkeit
+
+# Rückgabe des interaktiven ggplot-Objekts
+girafe(ggobj = p)
 ```
 
-Die Grafiken zeigen, dass die höchste absolute Anzahl gemeldeter Fälle im Zentrum Berlins liegt. Besonders herausstechend sind Bezirk 1 und Bezirk 2, die die meisten Fälle verzeichnen. Zu diesen Bezirken gehören auch Regionen, die in den vorherigen Ergebnissen Spitzenreiter waren, wie "Tempelhofer Vorstadt" und "Alexanderplatz". Die niedrigsten Fallzahlen finden sich hingegen in Bezirk 5 und Bezirk 10. Müggelheim, das zuvor als Region mit den wenigsten absoluten Fällen identifiziert wurde, liegt jedoch nicht in einem dieser Bezirke. Dabei ist zu beachten, dass die Bezirke unterschiedlich viele Regionen umfassen, was dazu führt, dass beispielsweise Bezirk 9 nun eine deutlich höhere absolute Fallzahl aufweist.
+Die Grafiken zeigen, dass die höchste absolute Anzahl gemeldeter Fälle im Zentrum Berlins liegt.
+Besonders herausstechend sind Bezirk 1 und Bezirk 2, die die meisten Fälle verzeichnen.
+Zu diesen Bezirken gehören auch Regionen, die in den vorherigen Ergebnissen Spitzenreiter waren, wie "Tempelhofer Vorstadt" und "Alexanderplatz".
+Die niedrigsten Fallzahlen finden sich hingegen in Bezirk 5 und Bezirk 10.
+Müggelheim, das zuvor als Region mit den wenigsten absoluten Fällen identifiziert wurde, liegt jedoch nicht in einem dieser Bezirke.
+Dabei ist zu beachten, dass die Bezirke unterschiedlich viele Regionen umfassen, was dazu führt, dass beispielsweise Bezirk 9 nun eine deutlich höhere absolute Fallzahl aufweist.
 
 # Durchschnittliche Fahrraddiebstähle
 
-Da es sich dem Kapitel zuvor lediglich um absolute Anzahlen an gemeldeten Fahrradiebstählen handelte, analysiert dieses Kapitel die durchschnittlichen Fahrraddiebstählen. Dabei berechnet sich der Durchschnitt zu einen aus der absoluten Anzahl dividiert durch die Einwohnerzahl der Region/Bezirk aus der Datei "LOR-Räume mit Kontextindikatoren.xlsx" und zu anderen aus der absoluten Anzahl in einem Bezirk, dividiert durch die Anzahl der Regionen in dem Bezirk.
+Da es sich dem Kapitel zuvor lediglich um absolute Anzahlen an gemeldeten Fahrradiebstählen handelte, analysiert dieses Kapitel die durchschnittlichen Fahrraddiebstählen.
+Dabei berechnet sich der Durchschnitt zu einen aus der absoluten Anzahl dividiert durch die Einwohnerzahl der Region/Bezirk aus der Datei "LOR-Räume mit Kontextindikatoren.xlsx" und zu anderen aus der absoluten Anzahl in einem Bezirk, dividiert durch die Anzahl der Regionen in dem Bezirk.
 
 ### Präparation Durchschnitt der Fahrradiebstähle
 
@@ -445,12 +508,17 @@ berlin_map_durchschnitt_bezirk <- berlin_map %>%
 ### Visualisierungen zu den durchschnittlichen Fahrradiebstählen (mit Bezirksregion)
 
 ```{r}
-p_bez <- ggplot(data = berlin_map_bezirk) +
-  geom_sf(aes(
-    fill = round(anzahl_bezirk/anzahl_bezirksregionen, 2),
-    text = paste0("Bezirk: ", BEZ, "<br>Fälle: ", round(anzahl_bezirk/anzahl_bezirksregionen, 2))
+# Erstelle die interaktive Bezirkskarte mit durchschnittlichen Werten
+p_bez_ggiraph <- ggplot(data = berlin_map_bezirk) +
+  geom_sf_interactive(aes(
+    fill = round(anzahl_bezirk / anzahl_bezirksregionen, 2),  # Durchschnittswerte
+    tooltip = paste0(
+      "Bezirk: ", BEZ, "<br>",
+      "Durchschnittliche Fälle: ", round(anzahl_bezirk / anzahl_bezirksregionen, 2)
+    ),  # Tooltip-Inhalt
+    data_id = BEZ  # Interaktive ID für Bezirke
   ), color = "black") +
-  scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
+  scale_fill_gradient(low = "blue", high = "red", name = "Durchschnittliche Fälle", na.value = "grey") +
   theme_minimal() +
   labs(
     title = "Durchschnittliche Anzahl an Fahrraddiebstähle in Berlin: Bezirk",
@@ -458,30 +526,40 @@ p_bez <- ggplot(data = berlin_map_bezirk) +
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
-# Interaktive Version der Karte
-interactive_map_bez <- ggplotly(p_bez)
+# Erstelle die ggiraph-Visualisierung
+interactive_map_bez <- girafe(ggobj = p_bez_ggiraph)
+
+# Passe ggiraph-Einstellungen an (optional)
+interactive_map_bez <- girafe_options(
+  interactive_map_bez,
+  opts_hover(css = "fill:grey;cursor:pointer;"),
+  opts_tooltip(css = "background-color:white;color:black;padding:5px;border-radius:5px;")
+)
 
 # Zeige die interaktive Karte
 interactive_map_bez
 ```
 
-Diese Karte zeigt das Verhältnis der absoluten Anzahl der Bezirke zur Anzahl der Regionen innerhalb jedes Bezirks. Die unterschiedlichen Farbtöne verdeutlichen, dass die Analyse aus dem vorherigen Kapitel durch die ungleiche Verteilung der Regionen pro Bezirk verfälscht wurde.
+Diese Karte zeigt das Verhältnis der absoluten Anzahl der Bezirke zur Anzahl der Regionen innerhalb jedes Bezirks.
+Die unterschiedlichen Farbtöne verdeutlichen, dass die Analyse aus dem vorherigen Kapitel durch die ungleiche Verteilung der Regionen pro Bezirk verfälscht wurde.
 
-Trotz dieser Anpassung bleiben Bezirk 5 und Bezirk 10 die Bezirke mit den geringsten Vorfällen, während Bezirk 1 und Bezirk 2 die Bezirke mit den meisten Vorfällen bleiben. Besonders deutlich zeigt sich eine Veränderung bei den Bezirken 1, 6, 9 und 12.
+Trotz dieser Anpassung bleiben Bezirk 5 und Bezirk 10 die Bezirke mit den geringsten Vorfällen, während Bezirk 1 und Bezirk 2 die Bezirke mit den meisten Vorfällen bleiben.
+Besonders deutlich zeigt sich eine Veränderung bei den Bezirken 1, 6, 9 und 12.
 
 ### Visualisierungen zu den durchschnittlichen Fahrradiebstählen (mit Einwohnerzahl)
 
 #### Bezirksregionen
 
 ```{r}
-# Interaktive Karte: Bezirksregionen
-p_bezirksregion <- ggplot(data = berlin_map_durschnitt_bezirksregion) +
-  geom_sf(aes(
-    fill = durchschnitt_promille,
-    text = paste0(
+# Erstelle die interaktive Karte der Bezirksregionen
+p_bezirksregion_ggiraph <- ggplot(data = berlin_map_durschnitt_bezirksregion) +
+  geom_sf_interactive(aes(
+    fill = durchschnitt_promille,  # Durchschnittswerte in Promille
+    tooltip = paste0(
       "Bezirksregion: ", BZR_NAME, 
       "<br>Durchschnitt (Promille): ", round(durchschnitt_promille, 2)
-    )
+    ),  # Tooltip-Inhalt
+    data_id = BZR_NAME  # Interaktive ID für Bezirksregionen
   ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
   theme_minimal() +
@@ -491,19 +569,26 @@ p_bezirksregion <- ggplot(data = berlin_map_durschnitt_bezirksregion) +
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
-# Interaktive Version
-interactive_map_bezirksregion <- ggplotly(p_bezirksregion)
+# Erstelle die ggiraph-Visualisierung
+interactive_map_bezirksregion <- girafe(ggobj = p_bezirksregion_ggiraph)
+
+# Passe ggiraph-Einstellungen an (optional)
+interactive_map_bezirksregion <- girafe_options(
+  interactive_map_bezirksregion,
+  opts_hover(css = "fill:grey;cursor:pointer;"),
+  opts_tooltip(css = "background-color:white;color:black;padding:5px;border-radius:5px;")
+)
 
 # Zeige die interaktive Karte
 interactive_map_bezirksregion
 ```
 
 ```{r}
-# Bezirksregionen sortieren nach dem Durchschnitt in Promille
+# Bezirksregionen nach Durchschnitt in Promille sortieren
 berlin_map_durschnitt_bezirksregion <- berlin_map_durschnitt_bezirksregion %>%
   arrange(durchschnitt_promille)
 
-# Reihenfolge der Bezirksregionen nach dem Durchschnitt in Promille für ggplot anpassen
+# Reihenfolge der Bezirksregionen für ggplot anpassen
 berlin_map_durschnitt_bezirksregion$BZR_NAME <- factor(berlin_map_durschnitt_bezirksregion$BZR_NAME, 
                                                        levels = berlin_map_durschnitt_bezirksregion$BZR_NAME[order(berlin_map_durschnitt_bezirksregion$durchschnitt_promille)])
 
@@ -514,18 +599,18 @@ split_data_bezirksregion_durchschnitt <- split(berlin_map_durschnitt_bezirksregi
 min_val <- min(berlin_map_durschnitt_bezirksregion$durchschnitt_promille, na.rm = TRUE)
 max_val <- max(berlin_map_durschnitt_bezirksregion$durchschnitt_promille, na.rm = TRUE)
 
-# Interaktive Diagramme mit ggplotly
+# Interaktive Diagramme mit ggiraph
 interactive_plots_bezirksregion_durchschnitt <- lapply(1:3, function(i) {
   p <- ggplot(split_data_bezirksregion_durchschnitt[[i]], aes(
       x = BZR_NAME, 
       y = durchschnitt_promille, 
       fill = durchschnitt_promille, 
-      text = paste0(
+      tooltip = paste0(
         "Bezirksregion: ", BZR_NAME, 
         "<br>Durchschnitt (Promille): ", round(durchschnitt_promille, 4)
       )
     )) +
-    geom_bar(stat = "identity") +
+    geom_bar_interactive(stat = "identity") +
     scale_fill_gradient(low = "blue", high = "red", limits = c(min_val, max_val)) +  # Farbverlauf über alle Plots hinweg
     labs(
       title = paste("Durchschnitt in Promille je Bezirksregion (Teil", i, ")"),
@@ -533,31 +618,38 @@ interactive_plots_bezirksregion_durchschnitt <- lapply(1:3, function(i) {
       y = "Durchschnitt in Promille"
     ) +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme(
+      axis.text.x = element_blank(),   # Bezirksnamen unter der X-Achse entfernen
+      axis.ticks.x = element_blank()   # Auch die X-Achsen-Striche entfernen
+    )
   
-  # Konvertiere ggplot-Objekt zu einer interaktiven Version
-  ggplotly(p)
+  # Rückgabe des interaktiven ggplot-Objekts
+  girafe(ggobj = p)
 })
 
 # Ergebnisse anzeigen
-print(interactive_plots_bezirksregion_durchschnitt[[1]])
-print(interactive_plots_bezirksregion_durchschnitt[[2]])
-print(interactive_plots_bezirksregion_durchschnitt[[3]])
+interactive_plots_bezirksregion_durchschnitt[[1]]
+interactive_plots_bezirksregion_durchschnitt[[2]]
+interactive_plots_bezirksregion_durchschnitt[[3]]
 ```
 
-Durch die Berücksichtigung der Einwohnerzahl hat sich die Verteilung der Werte deutlich verändert. Die Stadtmitte weist nun wesentlich geringere Werte auf. Überraschenderweise erreichen "Schmöckwitz" sowie "Malchow, Wartenberg und Falkenberg" die höchsten Werte. Im Vergleich dazu hatten diese Bezirksregionen bei der Analyse mit absoluten Zahlen im Verhältnis zu den anderen geringe Fallzahlen gemeldet.
+Durch die Berücksichtigung der Einwohnerzahl hat sich die Verteilung der Werte deutlich verändert.
+Die Stadtmitte weist nun wesentlich geringere Werte auf.
+Überraschenderweise erreichen "Schmöckwitz" sowie "Malchow, Wartenberg und Falkenberg" die höchsten Werte.
+Im Vergleich dazu hatten diese Bezirksregionen bei der Analyse mit absoluten Zahlen im Verhältnis zu den anderen geringe Fallzahlen gemeldet.
 
 ### Bezirke
 
 ```{r}
-# Interaktive Karte: Bezirke
-p_bezirk <- ggplot(data = berlin_map_durchschnitt_bezirk) +
-  geom_sf(aes(
-    fill = durchschnitt_promille,
-    text = paste0(
+# Erstelle die interaktive Karte der Bezirke
+p_bezirk_ggiraph <- ggplot(data = berlin_map_durchschnitt_bezirk) +
+  geom_sf_interactive(aes(
+    fill = durchschnitt_promille,  # Durchschnittswerte in Promille
+    tooltip = paste0(
       "Bezirk: ", BEZ, 
       "<br>Durchschnitt (Promille): ", round(durchschnitt_promille, 2)
-    )
+    ),  # Tooltip-Inhalt
+    data_id = BEZ  # Interaktive ID für Bezirke
   ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Fälle", na.value = "grey") +
   theme_minimal() +
@@ -567,53 +659,72 @@ p_bezirk <- ggplot(data = berlin_map_durchschnitt_bezirk) +
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
-# Interaktive Version
-interactive_map_bezirk <- ggplotly(p_bezirk)
+# Erstelle die ggiraph-Visualisierung
+interactive_map_bezirk <- girafe(ggobj = p_bezirk_ggiraph)
+
+# Passe ggiraph-Einstellungen an (optional)
+interactive_map_bezirk <- girafe_options(
+  interactive_map_bezirk,
+  opts_hover(css = "fill:grey;cursor:pointer;"),
+  opts_tooltip(css = "background-color:white;color:black;padding:5px;border-radius:5px;")
+)
 
 # Zeige die interaktive Karte
 interactive_map_bezirk
 ```
 
 ```{r}
-# Bezirke
-
 # Duplikate in der BEZ-Spalte entfernen und sortieren
 berlin_map_durchschnitt_bezirk <- berlin_map_durchschnitt_bezirk %>%
   distinct(BEZ, .keep_all = TRUE) %>%
   arrange(durchschnitt_promille)
 
-# Konvertiere die BEZ-Spalte in einen Faktor mit der aufsteigenden Reihenfolge der anzahl_bezirk
+# Konvertiere die BEZ-Spalte in einen Faktor mit der aufsteigenden Reihenfolge der durchschnitt_promille
 berlin_map_durchschnitt_bezirk$BEZ <- factor(berlin_map_durchschnitt_bezirk$BEZ, levels = berlin_map_durchschnitt_bezirk$BEZ)
 
-# Erstelle das Plot mit Farbverlauf
-ggplot(berlin_map_durchschnitt_bezirk, aes(x = BEZ, y = durchschnitt_promille, fill = durchschnitt_promille)) +
-  geom_bar(stat = "identity", position = "dodge") +
+# Erstelle das Plot mit ggiraph
+p <- ggplot(berlin_map_durchschnitt_bezirk, aes(x = BEZ, y = durchschnitt_promille, fill = durchschnitt_promille, 
+                                               tooltip = paste("Bezirk: ", BEZ, "<br>Durchschnitt (Promille): ", round(durchschnitt_promille, 4)))) +
+  geom_bar_interactive(stat = "identity", position = "dodge") +
   scale_fill_gradient(low = "blue", high = "red") +  # Farbverlauf
   labs(
     title = "Durchschnitt der Fahrraddiebstähle je Bezirk",
     x = "Bezirk",
-    y = "Durchscnitt der Fälle"
+    y = "Durchschnitt der Fälle"
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Rückgabe des interaktiven ggplot-Objekts
+girafe(ggobj = p)
 ```
 
-Die Analyse unter Berücksichtigung der Einwohnerzahl zeigt deutliche Verschiebungen in der Risikobewertung der Bezirke: Bezirk 5 und 10 liegen nun an der Spitze, während Bezirk 10 zuvor noch deutlich weiter hinten rangierte. Im Gegensatz dazu sind Bezirk 2 und 1, die vorher führten, nun weiter zurückgefallen.
+Die Analyse unter Berücksichtigung der Einwohnerzahl zeigt deutliche Verschiebungen in der Risikobewertung der Bezirke: Bezirk 5 und 10 liegen nun an der Spitze, während Bezirk 10 zuvor noch deutlich weiter hinten rangierte.
+Im Gegensatz dazu sind Bezirk 2 und 1, die vorher führten, nun weiter zurückgefallen.
 
-Mit der Einbeziehung der Einwohnerzahl lässt sich das Risiko eines Fahrraddiebstahls in den Bezirken besser abschätzen. Die Ergebnisse zeigen, dass in den Bezirken 5 und 10 das Risiko mit jeweils 0,14 und 0,15 Promille im Vergleich zu den anderen Bezirken am höchsten ist. Das geringste Risiko weist Bezirk 12 mit 0,11 Promille auf. Dennoch liegen die Durchschnittswerte aller Bezirke dicht beieinander, mit Differenzen von lediglich 0,01 Promille.
+Mit der Einbeziehung der Einwohnerzahl lässt sich das Risiko eines Fahrraddiebstahls in den Bezirken besser abschätzen.
+Die Ergebnisse zeigen, dass in den Bezirken 5 und 10 das Risiko mit jeweils 0,14 und 0,15 Promille im Vergleich zu den anderen Bezirken am höchsten ist.
+Das geringste Risiko weist Bezirk 12 mit 0,11 Promille auf.
+Dennoch liegen die Durchschnittswerte aller Bezirke dicht beieinander, mit Differenzen von lediglich 0,01 Promille.
 
 Es sollte jedoch bedacht werden, dass weitere Faktoren eine Rolle spielen können, etwa Fahrraddiebstähle durch Personen aus anderen Bezirken, Bezirksregionen oder von außerhalb Berlins.
 
 ## Fazit
+
 In diesem Kapitel wurde die Analyse der Fahrraddiebstähle in Berlin im Zeitraum 2023-2024 durchgeführt, wobei der Fokus auf zwei Hauptaspekten lag: der absoluten Anzahl der Diebstähle und deren Verteilung auf die verschiedenen Bezirke sowie Bezirksregionen.
 
-**Absolute Anzahl der Diebstähle:**
-Der Datensatz „Fahrraddiebstahl in Berlin 2023-2024“ wurde ausgewertet, um die Gesamtzahl der Vorfälle zu ermitteln. Es zeigte sich, dass insgesamt 39.173 Diebstähle verzeichnet wurden. Bei der Differenzierung nach Art des Vorfalls stellte sich heraus, dass die Mehrheit der Diebstähle erfolgreich war: 38.996 Fälle wurden als erfolgreich gemeldet, während nur 169 Fälle als versuchte Diebstähle klassifiziert wurden.
+**Absolute Anzahl der Diebstähle:** Der Datensatz „Fahrraddiebstahl in Berlin 2023-2024“ wurde ausgewertet, um die Gesamtzahl der Vorfälle zu ermitteln.
+Es zeigte sich, dass insgesamt 39.173 Diebstähle verzeichnet wurden.
+Bei der Differenzierung nach Art des Vorfalls stellte sich heraus, dass die Mehrheit der Diebstähle erfolgreich war: 38.996 Fälle wurden als erfolgreich gemeldet, während nur 169 Fälle als versuchte Diebstähle klassifiziert wurden.
 
-**Verknüpfung mit Geo-Daten (Bezirke und Bezirksregionen):**
-Zur weiteren Analyse wurden Geo-Daten der Berliner Bezirke und Bezirksregionen aus einem GeoJSON-Datensatz importiert. Dabei wurden wichtige Informationen wie die Namen der Bezirke, ihre Flächen sowie deren Geometrien extrahiert und visuell in interaktiven Karten und Balkendiagrammen dargestellt. Diese Darstellung ermöglichte einen klaren Vergleich zwischen den einzelnen Bezirken und Bezirksregionen. 
+**Verknüpfung mit Geo-Daten (Bezirke und Bezirksregionen):** Zur weiteren Analyse wurden Geo-Daten der Berliner Bezirke und Bezirksregionen aus einem GeoJSON-Datensatz importiert.
+Dabei wurden wichtige Informationen wie die Namen der Bezirke, ihre Flächen sowie deren Geometrien extrahiert und visuell in interaktiven Karten und Balkendiagrammen dargestellt.
+Diese Darstellung ermöglichte einen klaren Vergleich zwischen den einzelnen Bezirken und Bezirksregionen.
 
-Zusätzlich wurden Durchschnittswerte berechnet, die die Anzahl der Diebstähle pro Bezirk und Bezirksregion in Relation zur Anzahl der Bezirksregionen im Bezirk sowie zur Einwohnerzahl der jeweiligen Bezirke und Bezirksregionen setzten. Diese Berechnungen verdeutlichten, dass eine höhere Einwohnerdichte tendenziell mit einer höheren absoluten Diebstahlrate korreliert. Es zeigte sich jedoch auch, dass die durchschnittliche Diebstahlrate pro Einwohner in weniger dicht besiedelten Gebieten nicht notwendigerweise niedriger ausfiel. Überraschenderweise war die Diebstahlrate in Bezirksregionen mit geringerer Einwohnerzahl und weniger absoluten Diebstählen nach Berücksichtigung der Einwohnerzahl deutlich höher, was eine neue Perspektive der Verteilung der Diebstähle offenbarte.
+Zusätzlich wurden Durchschnittswerte berechnet, die die Anzahl der Diebstähle pro Bezirk und Bezirksregion in Relation zur Anzahl der Bezirksregionen im Bezirk sowie zur Einwohnerzahl der jeweiligen Bezirke und Bezirksregionen setzten.
+Diese Berechnungen verdeutlichten, dass eine höhere Einwohnerdichte tendenziell mit einer höheren absoluten Diebstahlrate korreliert.
+Es zeigte sich jedoch auch, dass die durchschnittliche Diebstahlrate pro Einwohner in weniger dicht besiedelten Gebieten nicht notwendigerweise niedriger ausfiel.
+Überraschenderweise war die Diebstahlrate in Bezirksregionen mit geringerer Einwohnerzahl und weniger absoluten Diebstählen nach Berücksichtigung der Einwohnerzahl deutlich höher, was eine neue Perspektive der Verteilung der Diebstähle offenbarte.
 
 # Auswertung der Fahrradarten, Delikte und Erfassungsgründe
 
@@ -654,9 +765,11 @@ plot_ly(
   )
 ```
 
-Die Treemap zeigt, dass der größte Anteil der Fahrraddiebstähle im vorliegenden Datensatz auf Herrenfahrräder entfällt, gefolgt von Damenfahrrädern. Rennräder und Lastenfahrräder wurden deutlich seltener gestohlen.
+Die Treemap zeigt, dass der größte Anteil der Fahrraddiebstähle im vorliegenden Datensatz auf Herrenfahrräder entfällt, gefolgt von Damenfahrrädern.
+Rennräder und Lastenfahrräder wurden deutlich seltener gestohlen.
 
-Ein möglicher Einflussfaktor könnte darin liegen, dass Rennräder und Lastenräder in Berlin insgesamt weniger verbreitet sind. Dies könnte ein interessanter Ansatz für weiterführende Analysen sein.
+Ein möglicher Einflussfaktor könnte darin liegen, dass Rennräder und Lastenräder in Berlin insgesamt weniger verbreitet sind.
+Dies könnte ein interessanter Ansatz für weiterführende Analysen sein.
 
 ## Delikte
 
@@ -702,7 +815,8 @@ kuchendiagramm_delikte <- kuchendiagramm_delikte %>% layout(
 kuchendiagramm_delikte
 ```
 
-Das Kuchendiagramm zeigt, dass in 94,2 % der gemeldeten Fälle ausschließlich Fahrraddiebstähle verzeichnet wurden. In 5,8 % der Fälle erfolgte der Diebstahl jedoch in Verbindung mit einem Keller- oder Bodeneinbruch.
+Das Kuchendiagramm zeigt, dass in 94,2 % der gemeldeten Fälle ausschließlich Fahrraddiebstähle verzeichnet wurden.
+In 5,8 % der Fälle erfolgte der Diebstahl jedoch in Verbindung mit einem Keller- oder Bodeneinbruch.
 
 ## Verteilung Erfassungsgrund:
 
@@ -748,15 +862,25 @@ kuchendiagramm_erfassungsgrund <- kuchendiagramm_erfassungsgrund %>% layout(
 kuchendiagramm_erfassungsgrund
 ```
 
-Das Kuchendiagramm zeigt, dass 89,2 % der Delikte als schwere Diebstähle von Fahrrädern eingestuft wurden. 5,8 % entfielen auf schwere Diebstähle von oder aus Kellern und Bodenräumen. 4,8 % der Fälle betrafen einfache Fahrraddiebstähle, während lediglich 0,2 % einfache Diebstähle aus Kellern oder Bodenräumen ausmachten.
+Das Kuchendiagramm zeigt, dass 89,2 % der Delikte als schwere Diebstähle von Fahrrädern eingestuft wurden.
+5,8 % entfielen auf schwere Diebstähle von oder aus Kellern und Bodenräumen.
+4,8 % der Fälle betrafen einfache Fahrraddiebstähle, während lediglich 0,2 % einfache Diebstähle aus Kellern oder Bodenräumen ausmachten.
 
 ## Fazit
-**Art der Fahrräder:**  
-Die Analyse der Fahrradarten zeigt, dass der größte Anteil der Fahrraddiebstähle im vorliegenden Datensatz auf Herrenfahrräder entfällt, gefolgt von Damenfahrrädern. Rennräder und Lastenfahrräder wurden deutlich seltener gestohlen. Eine Treemap zeigt diese Verteilung visuell, wobei Herrenfahrräder am häufigsten betroffen sind. Ein möglicher Einflussfaktor könnte darin liegen, dass Rennräder und Lastenräder in Berlin insgesamt weniger verbreitet sind, was ein interessanter Ansatz für weiterführende Analysen darstellt.
-**Delikte:**  
-Die Analyse der Delikte zeigt, dass in 94,2 % der gemeldeten Fälle ausschließlich Fahrraddiebstähle verzeichnet wurden, während in 5,8 % der Fälle der Diebstahl in Verbindung mit einem Keller- oder Bodeneinbruch stattfand. Dies wurde durch ein interaktives Kuchendiagramm visualisiert, das die Verteilung der Delikte detailliert zeigt.
-**Verteilung der Erfassungsgründe:**  
-In Bezug auf den Erfassungsgrund zeigt die Auswertung, dass 89,2 % der Delikte als schwere Diebstähle von Fahrrädern eingestuft wurden. Weitere 5,8 % entfielen auf schwere Diebstähle von oder aus Kellern und Bodenräumen. Ein kleinerer Anteil (4,8 %) betraf einfache Fahrraddiebstähle, während lediglich 0,2 % einfache Diebstähle aus Kellern oder Bodenräumen ausmachten. Ein interaktives Kuchendiagramm verdeutlicht diese Verteilung und hebt die unterschiedlichen Erfassungsgründe hervor.
+
+**Art der Fahrräder:**\
+Die Analyse der Fahrradarten zeigt, dass der größte Anteil der Fahrraddiebstähle im vorliegenden Datensatz auf Herrenfahrräder entfällt, gefolgt von Damenfahrrädern.
+Rennräder und Lastenfahrräder wurden deutlich seltener gestohlen.
+Eine Treemap zeigt diese Verteilung visuell, wobei Herrenfahrräder am häufigsten betroffen sind.
+Ein möglicher Einflussfaktor könnte darin liegen, dass Rennräder und Lastenräder in Berlin insgesamt weniger verbreitet sind, was ein interessanter Ansatz für weiterführende Analysen darstellt.
+**Delikte:**\
+Die Analyse der Delikte zeigt, dass in 94,2 % der gemeldeten Fälle ausschließlich Fahrraddiebstähle verzeichnet wurden, während in 5,8 % der Fälle der Diebstahl in Verbindung mit einem Keller- oder Bodeneinbruch stattfand.
+Dies wurde durch ein interaktives Kuchendiagramm visualisiert, das die Verteilung der Delikte detailliert zeigt.
+**Verteilung der Erfassungsgründe:**\
+In Bezug auf den Erfassungsgrund zeigt die Auswertung, dass 89,2 % der Delikte als schwere Diebstähle von Fahrrädern eingestuft wurden.
+Weitere 5,8 % entfielen auf schwere Diebstähle von oder aus Kellern und Bodenräumen.
+Ein kleinerer Anteil (4,8 %) betraf einfache Fahrraddiebstähle, während lediglich 0,2 % einfache Diebstähle aus Kellern oder Bodenräumen ausmachten.
+Ein interaktives Kuchendiagramm verdeutlicht diese Verteilung und hebt die unterschiedlichen Erfassungsgründe hervor.
 
 # Schadenshöhe
 
@@ -803,9 +927,13 @@ plot_ly(
   )
 ```
 
-Die dargestellte Treemap gibt einen Überblick über die Gesamtschadenshöhen und durchschnittlichen Schadensbeträge je Fahrradart. Die größte Kategorie ist das **Herrenfahrrad**, das mit einem Gesamtschaden von 22.029.945 € und einem durchschnittlichen Schaden von 1.244,63 € den größten Anteil einnimmt. Es folgt das **Damenfahrrad** mit einem Gesamtschaden von 10.216.520 € und einem durchschnittlichen Schaden von 1.007,94 €.
+Die dargestellte Treemap gibt einen Überblick über die Gesamtschadenshöhen und durchschnittlichen Schadensbeträge je Fahrradart.
+Die größte Kategorie ist das **Herrenfahrrad**, das mit einem Gesamtschaden von 22.029.945 € und einem durchschnittlichen Schaden von 1.244,63 € den größten Anteil einnimmt.
+Es folgt das **Damenfahrrad** mit einem Gesamtschaden von 10.216.520 € und einem durchschnittlichen Schaden von 1.007,94 €.
 
-**Fahrräder** allgemein verursachen Schäden in Höhe von 8.346.700 €, wobei der durchschnittliche Schaden 1.354,76 € beträgt. Kleinere Kategorien wie **diverse Fahrräder** tragen mit 2.517.623 € Gesamtschaden (durchschnittlich 2.235,01 €) weniger zur Gesamtsumme bei. Weitere Fahrradtypen, wie beispielsweise **Mountainbikes**, sind ebenfalls enthalten, spielen aber in der Gesamtheit eine geringere Rolle.
+**Fahrräder** allgemein verursachen Schäden in Höhe von 8.346.700 €, wobei der durchschnittliche Schaden 1.354,76 € beträgt.
+Kleinere Kategorien wie **diverse Fahrräder** tragen mit 2.517.623 € Gesamtschaden (durchschnittlich 2.235,01 €) weniger zur Gesamtsumme bei.
+Weitere Fahrradtypen, wie beispielsweise **Mountainbikes**, sind ebenfalls enthalten, spielen aber in der Gesamtheit eine geringere Rolle.
 
 Die Größe und Farbe der Flächen in der Treemap reflektieren dabei sowohl die Höhe der Gesamtschäden als auch die relative Bedeutung der einzelnen Kategorien im Vergleich.
 
@@ -884,14 +1012,15 @@ berlin_map_schadenshöhe_durchschnitt_bezirk <- berlin_map %>%
 ### Visualisierung der absoluten Schadenshöhe in einer Karte & Tabelle
 
 ```{r}
-# Interaktive Karte: Bezirksregionen
-p_schadenshoehe_bezirksregion <- ggplot(data = berlin_map_schadenshöhe_bezirksregion) +
-  geom_sf(aes(
-    fill = SCHADENSHOEHE_SUMME,  # Füllung basierend auf Schadenshöhe
-    text = paste(
-      "Bezirksregion:", BZR_NAME, "<br>",
-      "Schadenshöhe (€):", SCHADENSHOEHE_SUMME
-    )  # Tooltip-Inhalt
+# Erstelle die interaktive Karte der Bezirksregionen basierend auf der Schadenshöhe
+p_schadenshoehe_bezirksregion_ggiraph <- ggplot(data = berlin_map_schadenshöhe_bezirksregion) +
+  geom_sf_interactive(aes(
+    fill = SCHADENSHOEHE_SUMME,  # Schadenshöhe
+    tooltip = paste(
+      "Bezirksregion:", BZR_NAME, 
+      "<br>Schadenshöhe (€):", SCHADENSHOEHE_SUMME
+    ),  # Tooltip-Inhalt
+    data_id = BZR_NAME  # Interaktive ID für Bezirksregionen
   ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Schadenshöhe (€)", na.value = "grey") +
   theme_minimal() +
@@ -901,22 +1030,30 @@ p_schadenshoehe_bezirksregion <- ggplot(data = berlin_map_schadenshöhe_bezirksr
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
-# Interaktive Version
-interactive_map_schadenshoehe_bezirksregion <- ggplotly(p_schadenshoehe_bezirksregion, tooltip = "text")
+# Erstelle die ggiraph-Visualisierung
+interactive_map_schadenshoehe_bezirksregion <- girafe(ggobj = p_schadenshoehe_bezirksregion_ggiraph)
+
+# Passe ggiraph-Einstellungen an (optional)
+interactive_map_schadenshoehe_bezirksregion <- girafe_options(
+  interactive_map_schadenshoehe_bezirksregion,
+  opts_hover(css = "fill:grey;cursor:pointer;"),
+  opts_tooltip(css = "background-color:white;color:black;padding:5px;border-radius:5px;")
+)
 
 # Zeige die interaktive Karte
 interactive_map_schadenshoehe_bezirksregion
 ```
 
 ```{r}
-# Interaktive Karte: Bezirke
-p_schadenshoehe_bezirk <- ggplot(data = berlin_map_schadenshöhe_bezirk) +
-  geom_sf(aes(
+# Erstelle die interaktive Karte der Bezirke basierend auf der Schadenshöhe (in Tausend Euro)
+p_schadenshoehe_bezirk_ggiraph <- ggplot(data = berlin_map_schadenshöhe_bezirk) +
+  geom_sf_interactive(aes(
     fill = SCHADENSHOEHE_SUMME / 1000,  # Schadenshöhe in Tausend Euro
-    text = paste(
-      "Bezirk:", BEZ, "<br>",
-      "Schadenshöhe (T€):", round(SCHADENSHOEHE_SUMME / 1000, 1)
-    )  # Tooltip-Inhalt
+    tooltip = paste(
+      "Bezirk:", BEZ, 
+      "<br>Schadenshöhe (T€):", round(SCHADENSHOEHE_SUMME / 1000, 1)
+    ),  # Tooltip-Inhalt
+    data_id = BEZ  # Interaktive ID für Bezirke
   ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Schadenshöhe (T€)", na.value = "grey") +
   theme_minimal() +
@@ -926,28 +1063,39 @@ p_schadenshoehe_bezirk <- ggplot(data = berlin_map_schadenshöhe_bezirk) +
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
-# Interaktive Version
-interactive_map_schadenshoehe_bezirk <- ggplotly(p_schadenshoehe_bezirk, tooltip = "text")
+# Erstelle die ggiraph-Visualisierung
+interactive_map_schadenshoehe_bezirk <- girafe(ggobj = p_schadenshoehe_bezirk_ggiraph)
+
+# Passe ggiraph-Einstellungen an (optional)
+interactive_map_schadenshoehe_bezirk <- girafe_options(
+  interactive_map_schadenshoehe_bezirk,
+  opts_hover(css = "fill:grey;cursor:pointer;"),
+  opts_tooltip(css = "background-color:white;color:black;padding:5px;border-radius:5px;")
+)
 
 # Zeige die interaktive Karte
 interactive_map_schadenshoehe_bezirk
 ```
 
-In dieser Analyse wurde ebenfalls eine Karte verwendet, die die absolute Anzahl der Diebstähle pro Bezirk und Bezirksregion darstellt. Um genauere Rückschlüsse auf die Schadenshöhe zu ziehen, erfolgt anschließend eine detailliertere Untersuchung. Nachdem die Karten betrachtet wurden, die den Durchschnitt der Schadenshöhe im Verhältnis zur Einwohnerzahl zeigen, wird eine tiefere Analyse durchgeführt. Wie bereits in der vorherigen Analyse erkennbar, sind diese Werte besser geeignet, um die Schadenshöhe präziser zu bewerten.
+In dieser Analyse wurde ebenfalls eine Karte verwendet, die die absolute Anzahl der Diebstähle pro Bezirk und Bezirksregion darstellt.
+Um genauere Rückschlüsse auf die Schadenshöhe zu ziehen, erfolgt anschließend eine detailliertere Untersuchung.
+Nachdem die Karten betrachtet wurden, die den Durchschnitt der Schadenshöhe im Verhältnis zur Einwohnerzahl zeigen, wird eine tiefere Analyse durchgeführt.
+Wie bereits in der vorherigen Analyse erkennbar, sind diese Werte besser geeignet, um die Schadenshöhe präziser zu bewerten.
 
 ## Durchschnittliche Schadenshöhe
 
 ### Karten: Durchschnittliche Schadenshöhe
 
 ```{r}
-# Interaktive Karte: Bezirksregionen
-p_schadenshoehe_durchschnitt_bezirksregion <- ggplot(data = berlin_map_schadenshöhe_durschnitt_bezirksregion) +
-  geom_sf(aes(
-    fill = SCHADENSHOEHE_DURCHSCHNITT,
-    text = paste0(
+# Erstelle die interaktive Karte der Bezirksregionen basierend auf der durchschnittlichen Schadenshöhe
+p_schadenshoehe_durchschnitt_bezirksregion_ggiraph <- ggplot(data = berlin_map_schadenshöhe_durschnitt_bezirksregion) +
+  geom_sf_interactive(aes(
+    fill = SCHADENSHOEHE_DURCHSCHNITT,  # Durchschnittliche Schadenshöhe
+    tooltip = paste0(
       "Bezirksregion: ", BZR_NAME, 
       "<br>Durchschnittliche Schadenshöhe: ", scales::comma(round(SCHADENSHOEHE_DURCHSCHNITT, 2)), " €"
-    )
+    ),  # Tooltip-Inhalt
+    data_id = BZR_NAME  # Interaktive ID für Bezirksregionen
   ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Durchschnitt (€)", na.value = "grey") +
   theme_minimal() +
@@ -957,20 +1105,30 @@ p_schadenshoehe_durchschnitt_bezirksregion <- ggplot(data = berlin_map_schadensh
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
-# Interaktive Version
-interactive_map_schadenshoehe_durchschnitt_bezirksregion <- ggplotly(p_schadenshoehe_durchschnitt_bezirksregion)
+# Erstelle die ggiraph-Visualisierung
+interactive_map_schadenshoehe_durchschnitt_bezirksregion <- girafe(ggobj = p_schadenshoehe_durchschnitt_bezirksregion_ggiraph)
+
+# Passe ggiraph-Einstellungen an (optional)
+interactive_map_schadenshoehe_durchschnitt_bezirksregion <- girafe_options(
+  interactive_map_schadenshoehe_durchschnitt_bezirksregion,
+  opts_hover(css = "fill:grey;cursor:pointer;"),
+  opts_tooltip(css = "background-color:white;color:black;padding:5px;border-radius:5px;")
+)
 
 # Zeige die interaktive Karte
 interactive_map_schadenshoehe_durchschnitt_bezirksregion
+```
 
-# Interaktive Karte: Bezirke
-p_schadenshoehe_durchschnitt_bezirk <- ggplot(data = berlin_map_schadenshöhe_durchschnitt_bezirk) +
-  geom_sf(aes(
-    fill = SCHADENSHOEHE_DURCHSCHNITT,
-    text = paste0(
+```{r}
+# Erstelle die interaktive Karte der Bezirke basierend auf der durchschnittlichen Schadenshöhe
+p_schadenshoehe_durchschnitt_bezirk_ggiraph <- ggplot(data = berlin_map_schadenshöhe_durchschnitt_bezirk) +
+  geom_sf_interactive(aes(
+    fill = SCHADENSHOEHE_DURCHSCHNITT,  # Durchschnittliche Schadenshöhe
+    tooltip = paste0(
       "Bezirk: ", BEZ, 
       "<br>Durchschnittliche Schadenshöhe: ", scales::comma(round(SCHADENSHOEHE_DURCHSCHNITT, 2)), " €"
-    )
+    ),  # Tooltip-Inhalt
+    data_id = BEZ  # Interaktive ID für Bezirke
   ), color = "black") +
   scale_fill_gradient(low = "blue", high = "red", name = "Durchschnitt (€)", na.value = "grey") +
   theme_minimal() +
@@ -980,8 +1138,15 @@ p_schadenshoehe_durchschnitt_bezirk <- ggplot(data = berlin_map_schadenshöhe_du
     caption = "Quelle: Fahrraddiebstahl-Datensatz und LOR-Daten"
   )
 
-# Interaktive Version
-interactive_map_schadenshoehe_durchschnitt_bezirk <- ggplotly(p_schadenshoehe_durchschnitt_bezirk)
+# Erstelle die ggiraph-Visualisierung
+interactive_map_schadenshoehe_durchschnitt_bezirk <- girafe(ggobj = p_schadenshoehe_durchschnitt_bezirk_ggiraph)
+
+# Passe ggiraph-Einstellungen an (optional)
+interactive_map_schadenshoehe_durchschnitt_bezirk <- girafe_options(
+  interactive_map_schadenshoehe_durchschnitt_bezirk,
+  opts_hover(css = "fill:grey;cursor:pointer;"),
+  opts_tooltip(css = "background-color:white;color:black;padding:5px;border-radius:5px;")
+)
 
 # Zeige die interaktive Karte
 interactive_map_schadenshoehe_durchschnitt_bezirk
@@ -995,12 +1160,17 @@ berlin_map_schadenshöhe_durchschnitt_bezirk <- berlin_map_schadenshöhe_durchsc
   distinct(BEZ, .keep_all = TRUE) %>%
   arrange(SCHADENSHOEHE_DURCHSCHNITT)
 
-# Konvertiere die BEZ-Spalte in einen Faktor mit der aufsteigenden Reihenfolge der anzahl_bezirk
-berlin_map_schadenshöhe_durchschnitt_bezirk$BEZ <- factor(berlin_map_schadenshöhe_durchschnitt_bezirk$BEZ, levels = berlin_map_schadenshöhe_durchschnitt_bezirk$BEZ)
+# Konvertiere die BEZ-Spalte in einen Faktor mit der aufsteigenden Reihenfolge der SCHADENSHOEHE_DURCHSCHNITT
+berlin_map_schadenshöhe_durchschnitt_bezirk$BEZ <- factor(berlin_map_schadenshöhe_durchschnitt_bezirk$BEZ, 
+                                                         levels = berlin_map_schadenshöhe_durchschnitt_bezirk$BEZ)
 
-# Erstelle das Plot mit Farbverlauf
-ggplot(berlin_map_schadenshöhe_durchschnitt_bezirk, aes(x = BEZ, y = SCHADENSHOEHE_DURCHSCHNITT, fill = SCHADENSHOEHE_DURCHSCHNITT)) +
-  geom_bar(stat = "identity", position = "dodge") +
+# Erstelle das interaktive Plot mit ggiraph
+p <- ggplot(berlin_map_schadenshöhe_durchschnitt_bezirk, aes(x = BEZ, y = SCHADENSHOEHE_DURCHSCHNITT, 
+                                                           fill = SCHADENSHOEHE_DURCHSCHNITT, 
+                                                           tooltip = paste("Bezirk: ", BEZ, 
+                                                                           "<br>Durchschnitt Schadenshöhe: ", 
+                                                                           round(SCHADENSHOEHE_DURCHSCHNITT, 2)))) +
+  geom_bar_interactive(stat = "identity", position = "dodge") +
   scale_fill_gradient(low = "blue", high = "red") +  # Farbverlauf
   labs(
     title = "Schadenshöhe der Fahrraddiebstähle je Bezirk",
@@ -1009,35 +1179,61 @@ ggplot(berlin_map_schadenshöhe_durchschnitt_bezirk, aes(x = BEZ, y = SCHADENSHO
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Rückgabe des interaktiven ggplot-Objekts
+girafe(ggobj = p)
 ```
 
 ### Bezirksregionen
 
-Die Karte zeigt, dass die Schadenshöhe in den verschiedenen Bezirksregionen von Berlin ähnlich verteilt ist wie die Karte der "Durchschnittlichen Fahrraddiebstähle in Berlin: Bezirksregion". Bei genauerer Betrachtung fallen jedoch Unterschiede auf. Da eine Analyse aller Bezirksregionen sehr umfangreich wäre, konzentriert sich die nächste Analyse auf die Bezirke, um die Korrelation zwischen der Anzahl der Fahrraddiebstähle und der Schadenshöhe näher zu untersuchen. Dadurch können auch Rückschlüsse darauf gezogen werden, ob in den unterschiedlichen Bezirken unterschiedlich wertvolle Diebesgüter gestohlen wurden.
+Die Karte zeigt, dass die Schadenshöhe in den verschiedenen Bezirksregionen von Berlin ähnlich verteilt ist wie die Karte der "Durchschnittlichen Fahrraddiebstähle in Berlin: Bezirksregion".
+Bei genauerer Betrachtung fallen jedoch Unterschiede auf.
+Da eine Analyse aller Bezirksregionen sehr umfangreich wäre, konzentriert sich die nächste Analyse auf die Bezirke, um die Korrelation zwischen der Anzahl der Fahrraddiebstähle und der Schadenshöhe näher zu untersuchen.
+Dadurch können auch Rückschlüsse darauf gezogen werden, ob in den unterschiedlichen Bezirken unterschiedlich wertvolle Diebesgüter gestohlen wurden.
 
 **Bezirke**
 
-Die Karte und das Diagramm zeigen, dass Bezirk 05 die höchste durchschnittliche Schadenshöhe aufweist, während Bezirk 12 den niedrigsten Wert erzielt. Interessanterweise führt Bezirk 05 jedoch nicht das Diagramm der Fahrraddiebstähle an – hier hat Bezirk 10 den höchsten Wert. Diese Beobachtungen deuten darauf hin, dass die Korrelation zwischen der Anzahl der Fahrraddiebstähle und der Schadenshöhe nicht besonders stark ausgeprägt ist. In den Bezirken, die im Diagramm der Fahrraddiebstähle weiter hinten (in Richtung Rot) platziert sind, ist die Schadenshöhe tendenziell höher. Umgekehrt haben Bezirke, die weiter vorne (in Richtung Blau) positioniert sind, im Allgemeinen niedrigere Schadenshöhen. Dies könnte darauf hindeuten, dass in den Bezirken mit höherer Schadenshöhe tendenziell wertvollere oder mehrere Fahrräder gestohlen wurden.
+Die Karte und das Diagramm zeigen, dass Bezirk 05 die höchste durchschnittliche Schadenshöhe aufweist, während Bezirk 12 den niedrigsten Wert erzielt.
+Interessanterweise führt Bezirk 05 jedoch nicht das Diagramm der Fahrraddiebstähle an – hier hat Bezirk 10 den höchsten Wert.
+Diese Beobachtungen deuten darauf hin, dass die Korrelation zwischen der Anzahl der Fahrraddiebstähle und der Schadenshöhe nicht besonders stark ausgeprägt ist.
+In den Bezirken, die im Diagramm der Fahrraddiebstähle weiter hinten (in Richtung Rot) platziert sind, ist die Schadenshöhe tendenziell höher.
+Umgekehrt haben Bezirke, die weiter vorne (in Richtung Blau) positioniert sind, im Allgemeinen niedrigere Schadenshöhen.
+Dies könnte darauf hindeuten, dass in den Bezirken mit höherer Schadenshöhe tendenziell wertvollere oder mehrere Fahrräder gestohlen wurden.
 
-Es ist wichtig zu betonen, dass bei der Berechnung der Schadenshöhe der Sachschaden nicht berücksichtigt wurde, wie zu Beginn bei der Beschreibung der Attribute erwähnt. Zudem wird ein Diebstahl, bei dem mehrere Fahrräder gestohlen wurden, nur als ein einziger Fahrraddiebstahl erfasst. Diese Unterschiede spiegeln sich auch in der Schadenshöhe wider.
+Es ist wichtig zu betonen, dass bei der Berechnung der Schadenshöhe der Sachschaden nicht berücksichtigt wurde, wie zu Beginn bei der Beschreibung der Attribute erwähnt.
+Zudem wird ein Diebstahl, bei dem mehrere Fahrräder gestohlen wurden, nur als ein einziger Fahrraddiebstahl erfasst.
+Diese Unterschiede spiegeln sich auch in der Schadenshöhe wider.
 
-Ein genauerer Blick auf die Karten zeigt, dass in Bezirken und Bezirksregionen, die eine intensivere Rottönung aufweisen als die Karte der durchschnittlichen Fahrraddiebstähle, die Schadenshöhe höher ausfällt. In blauer dargestellten Regionen sind die Schadenshöhen tendenziell niedriger, was darauf hindeutet, dass in diesen Gegenden häufiger mehrere Fahrräder oder teurere Fahrräder sowie zusätzliches Diebesgut gestohlen wurden. Wäre die Schadenshöhe in allen Bezirken gleich, würde die Karte der Schadenshöhe ein ähnliches Bild wie die Karte der durchschnittlichen Fahrraddiebstähle zeigen.
+Ein genauerer Blick auf die Karten zeigt, dass in Bezirken und Bezirksregionen, die eine intensivere Rottönung aufweisen als die Karte der durchschnittlichen Fahrraddiebstähle, die Schadenshöhe höher ausfällt.
+In blauer dargestellten Regionen sind die Schadenshöhen tendenziell niedriger, was darauf hindeutet, dass in diesen Gegenden häufiger mehrere Fahrräder oder teurere Fahrräder sowie zusätzliches Diebesgut gestohlen wurden.
+Wäre die Schadenshöhe in allen Bezirken gleich, würde die Karte der Schadenshöhe ein ähnliches Bild wie die Karte der durchschnittlichen Fahrraddiebstähle zeigen.
 
 ## Fazit
+
 Die Analyse der Schadenshöhe bei Fahrraddiebstählen zeigt interessante Muster bezüglich der absoluten und durchschnittlichen Schadenshöhe nach Fahrradart sowie der regionalen Verteilung der Schäden.
 
-**Schadenshöhe nach Fahrradart:**
-Die Gesamtschadenshöhe variiert je nach Fahrradart erheblich. Besonders auffällig ist das Herrenfahrrad, welches mit einer Gesamtschadenshöhe von 22.029.945 € den größten Anteil ausmacht, was mit einem durchschnittlichen Schaden von 1.244,63 € pro Fall einhergeht. Das Damenfahrrad folgt mit einem Gesamtschaden von 10.216.520 € und einem durchschnittlichen Schaden von 1.007,94 €. Im Vergleich dazu tragen Fahrräder allgemein 8.346.700 € zur Gesamtschadenshöhe bei, mit einem durchschnittlichen Schaden von 1.354,76 €. Kleinere Kategorien, wie diverse Fahrräder, haben eine Gesamtschadenshöhe von 2.517.623 € bei einem durchschnittlichen Schaden von 2.235,01 €.
-**Schadenshöhe je Region/Bezirk:**
-Bei der Betrachtung der regionalen Verteilung zeigt sich, dass die Schadenshöhe in den verschiedenen Bezirken Berlins stark variiert. Die Bezirksregionen wurden anhand der LOR (Lokalidentifier für Region) gruppiert, und die absoluten Schadenshöhen wurden summiert. Die Karte zur absoluten Schadenshöhe zeigt die Verteilung dieser Schäden, wobei größere Bezirksregionen deutlich höhere Schäden aufweisen. Eine detailliertere Untersuchung wurde durchgeführt, um den Zusammenhang zwischen Schadenshöhe und Einwohnerzahl zu ermitteln. Diese Analyse berücksichtigt nicht nur die absolute Schadenshöhe, sondern auch den durchschnittlichen Schaden pro Einwohner, was eine genauere Einschätzung der regionalen Verhältnisse ermöglicht.
-**Durchschnittliche Schadenshöhe je Region/Bezirk:**
-Die durchschnittliche Schadenshöhe wird berechnet, indem die Gesamtschadenshöhe durch die Einwohnerzahl des jeweiligen Bezirks oder der Bezirksregion geteilt wird. Dies ermöglicht eine Einschätzung der Schwere der Schäden relativ zur Bevölkerungszahl. Auf diese Weise wird deutlich, dass einige Regionen mit einer hohen Schadenshöhe pro Kopf auffallen, was auf eine höhere Häufigkeit oder Schwere der Fahrraddiebstähle in diesen Gebieten hindeutet. Die Karte zur durchschnittlichen Schadenshöhe zeigt diese Verhältnisse, wobei Bereiche mit besonders hohen Schäden pro Einwohner in rot und mit geringeren Schäden in blau markiert sind.
+**Schadenshöhe nach Fahrradart:** Die Gesamtschadenshöhe variiert je nach Fahrradart erheblich.
+Besonders auffällig ist das Herrenfahrrad, welches mit einer Gesamtschadenshöhe von 22.029.945 € den größten Anteil ausmacht, was mit einem durchschnittlichen Schaden von 1.244,63 € pro Fall einhergeht.
+Das Damenfahrrad folgt mit einem Gesamtschaden von 10.216.520 € und einem durchschnittlichen Schaden von 1.007,94 €.
+Im Vergleich dazu tragen Fahrräder allgemein 8.346.700 € zur Gesamtschadenshöhe bei, mit einem durchschnittlichen Schaden von 1.354,76 €.
+Kleinere Kategorien, wie diverse Fahrräder, haben eine Gesamtschadenshöhe von 2.517.623 € bei einem durchschnittlichen Schaden von 2.235,01 €.
+**Schadenshöhe je Region/Bezirk:** Bei der Betrachtung der regionalen Verteilung zeigt sich, dass die Schadenshöhe in den verschiedenen Bezirken Berlins stark variiert.
+Die Bezirksregionen wurden anhand der LOR (Lokalidentifier für Region) gruppiert, und die absoluten Schadenshöhen wurden summiert.
+Die Karte zur absoluten Schadenshöhe zeigt die Verteilung dieser Schäden, wobei größere Bezirksregionen deutlich höhere Schäden aufweisen.
+Eine detailliertere Untersuchung wurde durchgeführt, um den Zusammenhang zwischen Schadenshöhe und Einwohnerzahl zu ermitteln.
+Diese Analyse berücksichtigt nicht nur die absolute Schadenshöhe, sondern auch den durchschnittlichen Schaden pro Einwohner, was eine genauere Einschätzung der regionalen Verhältnisse ermöglicht.
+**Durchschnittliche Schadenshöhe je Region/Bezirk:** Die durchschnittliche Schadenshöhe wird berechnet, indem die Gesamtschadenshöhe durch die Einwohnerzahl des jeweiligen Bezirks oder der Bezirksregion geteilt wird.
+Dies ermöglicht eine Einschätzung der Schwere der Schäden relativ zur Bevölkerungszahl.
+Auf diese Weise wird deutlich, dass einige Regionen mit einer hohen Schadenshöhe pro Kopf auffallen, was auf eine höhere Häufigkeit oder Schwere der Fahrraddiebstähle in diesen Gebieten hindeutet.
+Die Karte zur durchschnittlichen Schadenshöhe zeigt diese Verhältnisse, wobei Bereiche mit besonders hohen Schäden pro Einwohner in rot und mit geringeren Schäden in blau markiert sind.
 
 Die interaktive Visualisierung dieser Daten über Karten und Diagramme hilft dabei, tiefere Einblicke in die geografische und kategoriale Verteilung der Schäden zu gewinnen und gezielte Maßnahmen zur Prävention und Schadensbegrenzung zu ergreifen.
 
 # Analyse der Tatzeiträume
 
-In diesem Kapitel werden die Zeiträume von Fahrraddiebstählen analysiert. Die Daten wurden in die Kategorien „Tagsüber“, „Nachts“ und „mehrere Tage“ unterteilt, wobei die Zuordnung anhand des Beginns des Diebstahls erfolgt. Die Diebstähle werden der Kategorie „Tagsüber“ zugeordnet, wenn sie zwischen 6:00 und 17:59 Uhr beginnen, der Kategorie „Nachts“, wenn sie zwischen 18:00 und 5:59 Uhr starten, und der Kategorie „mehrere Tage“, wenn der Diebstahl über 24 Stunden andauert.
+In diesem Kapitel werden die Zeiträume von Fahrraddiebstählen analysiert.
+Die Daten wurden in die Kategorien „Tagsüber“, „Nachts“ und „mehrere Tage“ unterteilt, wobei die Zuordnung anhand des Beginns des Diebstahls erfolgt.
+Die Diebstähle werden der Kategorie „Tagsüber“ zugeordnet, wenn sie zwischen 6:00 und 17:59 Uhr beginnen, der Kategorie „Nachts“, wenn sie zwischen 18:00 und 5:59 Uhr starten, und der Kategorie „mehrere Tage“, wenn der Diebstahl über 24 Stunden andauert.
 
 ## Präparation des Datensatz
 
@@ -1096,7 +1292,8 @@ durchschnitt <- mean(fahrraddiebstahl_dauer_df$Dauer, na.rm = TRUE)
 print(paste("Durchschnittszeit des Zeitraums eines Diebstahls beträgt:", durchschnitt))
 ```
 
-Da der Zeitraum des Fahrraddiebstahls sich aus der Zeitspanne zwischen dem letzten Moment, in dem das Fahrrad gesehen wurde, und dem Zeitpunkt, an dem der Diebstahl bemerkt wurde, ergibt, ist diese Aussage wenig aussagekräftig. Sie gibt lediglich an, dass der durchschnittliche Zeitraum zwischen dem letzten Sichtung des Fahrrads, dem tatsächlichen Diebstahl und dem Moment, in dem der Diebstahl bemerkt wurde, etwa 14 Stunden beträgt.
+Da der Zeitraum des Fahrraddiebstahls sich aus der Zeitspanne zwischen dem letzten Moment, in dem das Fahrrad gesehen wurde, und dem Zeitpunkt, an dem der Diebstahl bemerkt wurde, ergibt, ist diese Aussage wenig aussagekräftig.
+Sie gibt lediglich an, dass der durchschnittliche Zeitraum zwischen dem letzten Sichtung des Fahrrads, dem tatsächlichen Diebstahl und dem Moment, in dem der Diebstahl bemerkt wurde, etwa 14 Stunden beträgt.
 
 ## Zusammenfassung der Diebstahlsdauerzeiten
 
@@ -1122,13 +1319,22 @@ summary_table <- data.frame(
 kable(summary_table, caption = "Zusammenfassungen der Diebstahlsdauerzeiten")
 ```
 
-Diese Analyse zeigt, dass die kürzeste Zeit, in der ein Diebstahl bemerkt wurde, sowohl tagsüber als auch nachts bei 0 Stunden liegen kann, was bedeutet, dass der Diebstahl in derselben Stunde entdeckt wurde. Der längste Zeitraum beträgt 73 Stunden. Dies widerspricht jedoch der Angabe in der Datensatzbeschreibung, die besagt, dass Zeiträume von mehr als 72 Stunden nicht erfasst werden. Daher wird dieser Punkt weiter untersucht.
+Diese Analyse zeigt, dass die kürzeste Zeit, in der ein Diebstahl bemerkt wurde, sowohl tagsüber als auch nachts bei 0 Stunden liegen kann, was bedeutet, dass der Diebstahl in derselben Stunde entdeckt wurde.
+Der längste Zeitraum beträgt 73 Stunden.
+Dies widerspricht jedoch der Angabe in der Datensatzbeschreibung, die besagt, dass Zeiträume von mehr als 72 Stunden nicht erfasst werden.
+Daher wird dieser Punkt weiter untersucht.
 
 ```{r}
 # Zeilen filtern, bei denen die Dauer größer als 72 Stunden ist
 fahrraddiebstahl_dauer_df[fahrraddiebstahl_dauer_df$Dauer > 72, ]
 ```
-Der Datensatz scheint auf den ersten Blick nur einen Zeitraum von 72 Stunden zu umfassen. Eine genauere Untersuchung zeigt jedoch, dass am Sonntag, dem 29. Oktober 2023, eine Zeitumstellung stattgefunden hat (Quelle: [BMWK](https://www.bmwk.de/Redaktion/DE/Pressemitteilungen/2023/10/20231027-die-sommerzeit-endet-am-29-oktober-2023.html#:~:text=Am%20kommenden%20Sonntag%2C%20dem%2029,die%20Mitteleurop%C3%A4ische%20Sommerzeit%20(%20MESZ%20))). Dadurch ergibt sich ein Zeitraum von tatsächlich 73 Stunden. Die Funktion "difftime" hat diese Zeitumstellung berücksichtigt, was den korrekten maximalen Wert von 73 Stunden erklärt. Die ursprüngliche Datensatzbeschreibung ist daher ungenau, da sie die Zeitumstellung nicht berücksichtigt hat.
+
+Der Datensatz scheint auf den ersten Blick nur einen Zeitraum von 72 Stunden zu umfassen.
+Eine genauere Untersuchung zeigt jedoch, dass am Sonntag, dem 29.
+Oktober 2023, eine Zeitumstellung stattgefunden hat (Quelle: [BMWK](https://www.bmwk.de/Redaktion/DE/Pressemitteilungen/2023/10/20231027-die-sommerzeit-endet-am-29-oktober-2023.html#:~:text=Am%20kommenden%20Sonntag%2C%20dem%2029,die%20Mitteleurop%C3%A4ische%20Sommerzeit%20(%20MESZ%20))).
+Dadurch ergibt sich ein Zeitraum von tatsächlich 73 Stunden.
+Die Funktion "difftime" hat diese Zeitumstellung berücksichtigt, was den korrekten maximalen Wert von 73 Stunden erklärt.
+Die ursprüngliche Datensatzbeschreibung ist daher ungenau, da sie die Zeitumstellung nicht berücksichtigt hat.
 
 ## Tatzeitdauer: Verteilungsfuktionen
 
@@ -1177,11 +1383,39 @@ ggplot(data = fahrraddiebstahl_dauer_mehrere_tage_df, aes(x = Dauer)) +
     axis.title.y = element_text(size = 12, face = "bold")
   )
 ```
-Tagsüber: Die meisten Diebstähle, die tagsüber begannen, wurden innerhalb der ersten Stunde bemerkt. Im Verlauf des Tages nimmt die Zahl der Diebstähle, die bemerkt werden, bis zur 13. Stunde ab. Eine Ausnahme bilden dabei die 8. und 9. Stunde, in denen ein Anstieg zu verzeichnen ist. Bis zur 15. Stunde kommt es zu einem weiteren, kurzen Anstieg. Ab der 16. Stunde sinken die Werte kontinuierlich, wobei in den Stunden 21, 23 und 24 noch einmal leichte Anstiege zu beobachten sind.
 
-Nachts: Auch nachts werden die meisten Diebstähle innerhalb der ersten Stunde bemerkt. Danach sinken die Werte bis zur 6. Stunde deutlich. Ab der 7. Stunde steigt die Zahl der bemerkten Diebstähle wieder stark an, bis zur 13. Stunde. Ab der 14. Stunde fallen die Werte erneut stark ab. Der Anstieg in den frühen Morgenstunden lässt sich damit erklären, dass die betroffene Person vermutlich den Schlaf beendet und den Diebstahl erst dann bemerkt hat.
+Tagsüber: Die meisten Diebstähle, die tagsüber begannen, wurden innerhalb der ersten Stunde bemerkt.
+Im Verlauf des Tages nimmt die Zahl der Diebstähle, die bemerkt werden, bis zur 13.
+Stunde ab.
+Eine Ausnahme bilden dabei die 8.
+und 9.
+Stunde, in denen ein Anstieg zu verzeichnen ist.
+Bis zur 15.
+Stunde kommt es zu einem weiteren, kurzen Anstieg.
+Ab der 16.
+Stunde sinken die Werte kontinuierlich, wobei in den Stunden 21, 23 und 24 noch einmal leichte Anstiege zu beobachten sind.
 
-Mehrere Tage: Im Zeitraum von 25 bis 35 Stunden lässt sich ein abfallender Trend beobachten. Von der 35. bis zur 50. Stunde steigt der Wert stark an, bleibt jedoch deutlich unter dem Höhepunkt der 25. Stunde. Zwischen der 50. und 60. Stunde tritt ein weiterer Tiefpunkt auf. Ab etwa der 62. Stunde stabilisiert sich der Wert und pendelt sich zwischen 100 und 150 Fällen ein. Ein möglicher Einflussfaktor für diese Schwankungen könnte das Wochenmuster sein, weshalb eine detailliertere Analyse der Wochentage sinnvoll wäre.
+Nachts: Auch nachts werden die meisten Diebstähle innerhalb der ersten Stunde bemerkt.
+Danach sinken die Werte bis zur 6.
+Stunde deutlich.
+Ab der 7.
+Stunde steigt die Zahl der bemerkten Diebstähle wieder stark an, bis zur 13.
+Stunde.
+Ab der 14.
+Stunde fallen die Werte erneut stark ab.
+Der Anstieg in den frühen Morgenstunden lässt sich damit erklären, dass die betroffene Person vermutlich den Schlaf beendet und den Diebstahl erst dann bemerkt hat.
+
+Mehrere Tage: Im Zeitraum von 25 bis 35 Stunden lässt sich ein abfallender Trend beobachten.
+Von der 35.
+bis zur 50.
+Stunde steigt der Wert stark an, bleibt jedoch deutlich unter dem Höhepunkt der 25.
+Stunde.
+Zwischen der 50.
+und 60.
+Stunde tritt ein weiterer Tiefpunkt auf.
+Ab etwa der 62.
+Stunde stabilisiert sich der Wert und pendelt sich zwischen 100 und 150 Fällen ein.
+Ein möglicher Einflussfaktor für diese Schwankungen könnte das Wochenmuster sein, weshalb eine detailliertere Analyse der Wochentage sinnvoll wäre.
 
 ## Tatzeitdauer: Verteilungsfuktion nach Wochentagen
 
@@ -1224,16 +1458,28 @@ ggplot(data = fahrraddiebstahl_dauer_wochentag_df, aes(x = Wochentag, y = Stunde
     axis.text.y = element_text(size = 10)
   )
 ```
-Die Werte am Freitag und Samstag ab der 36. Stunde zeigen auffällig höhere Spitzen im Vergleich zu den übrigen Tagen von Sonntag bis Donnerstag. Besonders ausgeprägt ist der Anstieg am Freitag ab der 60. Stunde. Rechnet man 60 Stunden ab Freitag, landet man beim Montag, was auf einen Zusammenhang hindeutet. Ähnlich verhält es sich mit den Samstagswerten: Bei einer Hochrechnung von 42 Stunden landet man ebenfalls am Montag. Diese Muster legen nahe, dass Diebstähle, die am Wochenende stattgefunden haben, häufig erst am Montag bemerkt wurden.
 
-Um die genaue Ursache für dieses Phänomen zu ermitteln, wäre eine eingehendere Untersuchung des Fahrradverkehrs und der Aktivitäten der Berliner Bürger notwendig. Möglicherweise hängt es mit dem Wochenendverhalten zusammen, wie etwa dem Wegfahren oder der unbemerkten Abwesenheit von zu Hause. In vielen Fällen wird ein Fahrraddiebstahl erst dann bemerkt, wenn die Betroffenen das Fahrrad am Montag wieder benötigen, um zur Arbeit oder zu anderen Verpflichtungen zu fahren. 
+Die Werte am Freitag und Samstag ab der 36.
+Stunde zeigen auffällig höhere Spitzen im Vergleich zu den übrigen Tagen von Sonntag bis Donnerstag.
+Besonders ausgeprägt ist der Anstieg am Freitag ab der 60.
+Stunde.
+Rechnet man 60 Stunden ab Freitag, landet man beim Montag, was auf einen Zusammenhang hindeutet.
+Ähnlich verhält es sich mit den Samstagswerten: Bei einer Hochrechnung von 42 Stunden landet man ebenfalls am Montag.
+Diese Muster legen nahe, dass Diebstähle, die am Wochenende stattgefunden haben, häufig erst am Montag bemerkt wurden.
+
+Um die genaue Ursache für dieses Phänomen zu ermitteln, wäre eine eingehendere Untersuchung des Fahrradverkehrs und der Aktivitäten der Berliner Bürger notwendig.
+Möglicherweise hängt es mit dem Wochenendverhalten zusammen, wie etwa dem Wegfahren oder der unbemerkten Abwesenheit von zu Hause.
+In vielen Fällen wird ein Fahrraddiebstahl erst dann bemerkt, wenn die Betroffenen das Fahrrad am Montag wieder benötigen, um zur Arbeit oder zu anderen Verpflichtungen zu fahren.
 
 Eine weiterführende Untersuchung wird im Rahmen dieser Analyse nicht durchgeführt, da die erforderlichen Daten nicht vorliegen und eine solche Analyse den Umfang dieser Untersuchung deutlich überschreiten würde.
 
 ## Fazit
-Die Analyse zeigt, dass es bestimmte Zeiträume und Wochentage gibt, an denen Diebstähle häufiger festgestellt werden, was auf spezifische Verhaltensmuster hinweist. Besonders auffällig sind die erhöhten Zahlen an Wochenenden, was möglicherweise auf eine verzögerte Entdeckung von Diebstählen gegen Ende des Wochenendes hinweist.
 
-Darüber hinaus zeigt die Analyse, dass Diebstähle häufig eine Dauer von weniger als einer Stunde aufweisen, wobei diese Zeitspanne mit den meisten Fällen korreliert. Dieses Ergebnis könnte für die Untersuchung der Tatzeiten von Bedeutung sein, da diese spezifischen Zeitdauern einer bestimmten Uhrzeit (in Stunden) zugeordnet werden können.
+Die Analyse zeigt, dass es bestimmte Zeiträume und Wochentage gibt, an denen Diebstähle häufiger festgestellt werden, was auf spezifische Verhaltensmuster hinweist.
+Besonders auffällig sind die erhöhten Zahlen an Wochenenden, was möglicherweise auf eine verzögerte Entdeckung von Diebstählen gegen Ende des Wochenendes hinweist.
+
+Darüber hinaus zeigt die Analyse, dass Diebstähle häufig eine Dauer von weniger als einer Stunde aufweisen, wobei diese Zeitspanne mit den meisten Fällen korreliert.
+Dieses Ergebnis könnte für die Untersuchung der Tatzeiten von Bedeutung sein, da diese spezifischen Zeitdauern einer bestimmten Uhrzeit (in Stunden) zugeordnet werden können.
 
 # Analyse der Tatzeiten
 
@@ -1268,9 +1514,13 @@ ggplot(stunden_anzahl, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anzahl)) +
   ) +
   theme_minimal()
 ```
-Das Diagramm veranschaulicht die Häufigkeit der Diebstähle zu den verschiedenen geschätzten Anfangszeiten. Aufgrund der Ungenauigkeit dieser Uhrzeiten bei längeren Tatdauern ist die Aussagekraft jedoch eingeschränkt. Die Analyse der Dauer hat jedoch ergeben, dass in einigen Fällen mehrere Diebstähle innerhalb derselben Stunde erfasst wurden. Diese Daten können daher herausgefiltert werden, um präzisere Aussagen über die tatsächlichen Tatzeiten zu ermöglichen.
 
-### Präferierte Uhrzeiten mit beschränkter Dauer (Dauer<1)
+Das Diagramm veranschaulicht die Häufigkeit der Diebstähle zu den verschiedenen geschätzten Anfangszeiten.
+Aufgrund der Ungenauigkeit dieser Uhrzeiten bei längeren Tatdauern ist die Aussagekraft jedoch eingeschränkt.
+Die Analyse der Dauer hat jedoch ergeben, dass in einigen Fällen mehrere Diebstähle innerhalb derselben Stunde erfasst wurden.
+Diese Daten können daher herausgefiltert werden, um präzisere Aussagen über die tatsächlichen Tatzeiten zu ermöglichen.
+
+### Präferierte Uhrzeiten mit beschränkter Dauer (Dauer\<1)
 
 ```{r}
 # Filtere die Datensätze mit DAUER < 1
@@ -1296,17 +1546,28 @@ ggplot(stunden_anzahl_beschränkte_dauer, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anz
   ) +
   theme_minimal()
 ```
-Das Diagramm zeigt die Häufigkeit von Fahrraddiebstählen im Verlauf eines Tages. Die x-Achse ist in Stunden unterteilt (von 0 bis 24 Uhr), während die y-Achse die Anzahl der Diebstähle darstellt. Ziel der Analyse war es, präferierte Uhrzeiten für Fahrraddiebstähle zu identifizieren. Dabei wurden ausschließlich Datensätze berücksichtigt, deren Dauer weniger als eine Stunde beträgt.
 
-**Höchstwerte**: Die meisten Diebstähle ereignen sich am Nachmittag und frühen Abend, insbesondere zwischen 14 und 19 Uhr. Ein markanter Peak tritt um 16 Uhr auf.
+Das Diagramm zeigt die Häufigkeit von Fahrraddiebstählen im Verlauf eines Tages.
+Die x-Achse ist in Stunden unterteilt (von 0 bis 24 Uhr), während die y-Achse die Anzahl der Diebstähle darstellt.
+Ziel der Analyse war es, präferierte Uhrzeiten für Fahrraddiebstähle zu identifizieren.
+Dabei wurden ausschließlich Datensätze berücksichtigt, deren Dauer weniger als eine Stunde beträgt.
+
+**Höchstwerte**: Die meisten Diebstähle ereignen sich am Nachmittag und frühen Abend, insbesondere zwischen 14 und 19 Uhr.
+Ein markanter Peak tritt um 16 Uhr auf.
 **Tiefwerte**: In den frühen Morgenstunden (zwischen 2 und 5 Uhr) sowie in den späten Abendstunden (nach 21 Uhr) sind Fahrraddiebstähle seltener.
 **Allgemeiner** Trend: Die Häufigkeit der Diebstähle steigt stetig von den frühen Morgenstunden an, erreicht ihren Höhepunkt am Nachmittag und nimmt danach wieder ab.
 
-Das Ergebnis zeigt, dass Fahrraddiebstähle besonders häufig um 17 Uhr auftreten, während sie um 5 Uhr weniger bevorzugt sind. Der markante Höhepunkt um 17 Uhr war im Diagramm deutlich sichtbar, unabhängig von der Dauer der Tatzeiträume. In den Nachtstunden hingegen sind die Werte schwerer zu interpretieren, da Betroffene den Diebstahl möglicherweise im Schlaf nicht bemerken. Eine Erweiterung der Zeitintervalle würde hier keine neuen Erkenntnisse bringen, da die Schlafdauer individuell stark variiert. Betrachtet man jedoch beide Diagramme statistisch, lässt sich feststellen, dass nachts insgesamt weniger Fahrraddiebstähle verzeichnet werden, wodurch der Tiefpunkt um 5 Uhr weiterhin Bestand haben kann.
+Das Ergebnis zeigt, dass Fahrraddiebstähle besonders häufig um 17 Uhr auftreten, während sie um 5 Uhr weniger bevorzugt sind.
+Der markante Höhepunkt um 17 Uhr war im Diagramm deutlich sichtbar, unabhängig von der Dauer der Tatzeiträume.
+In den Nachtstunden hingegen sind die Werte schwerer zu interpretieren, da Betroffene den Diebstahl möglicherweise im Schlaf nicht bemerken.
+Eine Erweiterung der Zeitintervalle würde hier keine neuen Erkenntnisse bringen, da die Schlafdauer individuell stark variiert.
+Betrachtet man jedoch beide Diagramme statistisch, lässt sich feststellen, dass nachts insgesamt weniger Fahrraddiebstähle verzeichnet werden, wodurch der Tiefpunkt um 5 Uhr weiterhin Bestand haben kann.
 
 ### Präferierte Uhrzeiten mit beschränkter Dauer (Dauer≤2)
 
-Um mehr Daten einzubeziehen, wurde die Toleranz der Zeitdauer auf 3 Stunden (≤2) erhöht. Dadurch wird ein großer Anteil der Fälle abgedeckt, wie die Diagramme der Zeitdauern zeigen. Ob diese Anpassung die präferierten Uhrzeiten wesentlich beeinflusst, wird im folgenden Diagramm verdeutlicht.
+Um mehr Daten einzubeziehen, wurde die Toleranz der Zeitdauer auf 3 Stunden (≤2) erhöht.
+Dadurch wird ein großer Anteil der Fälle abgedeckt, wie die Diagramme der Zeitdauern zeigen.
+Ob diese Anpassung die präferierten Uhrzeiten wesentlich beeinflusst, wird im folgenden Diagramm verdeutlicht.
 
 ```{r}
 # Filtere die Datensätze mit DAUER <= 2
@@ -1332,9 +1593,13 @@ ggplot(stunden_anzahl_beschränkte_dauer, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anz
   ) +
   theme_minimal()
 ```
-Die Analyse zeigt, dass der Verlauf des Diagramms im Zeitraum <1 weitgehend unverändert bleibt, auch wenn die Toleranz auf 3 Stunden erweitert wird. Dadurch ändern sich die präferierten Uhrzeiten nicht signifikant. Die absolute Anzahl der Fälle nimmt jedoch deutlich zu, was zu einem größeren und aussagekräftigeren Datensatz führt. 
 
-Dieses Ergebnis unterstreicht, dass die Untersuchung von Dauern <1 gut geeignet ist, um präferierte Uhrzeiten zu identifizieren. Gleichzeitig zeigt es, dass für weiterführende Analysen der Datensatz mit einer Toleranz von ≤2 sinnvoll genutzt werden kann, um von der erhöhten Datenmenge zu profitieren.
+Die Analyse zeigt, dass der Verlauf des Diagramms im Zeitraum \<1 weitgehend unverändert bleibt, auch wenn die Toleranz auf 3 Stunden erweitert wird.
+Dadurch ändern sich die präferierten Uhrzeiten nicht signifikant.
+Die absolute Anzahl der Fälle nimmt jedoch deutlich zu, was zu einem größeren und aussagekräftigeren Datensatz führt.
+
+Dieses Ergebnis unterstreicht, dass die Untersuchung von Dauern \<1 gut geeignet ist, um präferierte Uhrzeiten zu identifizieren.
+Gleichzeitig zeigt es, dass für weiterführende Analysen der Datensatz mit einer Toleranz von ≤2 sinnvoll genutzt werden kann, um von der erhöhten Datenmenge zu profitieren.
 
 ## Anzahl der Diebstähle nach Ort+Uhrzeit
 
@@ -1367,13 +1632,16 @@ lor_max_zeit <- lor_zeit_anzahl %>%
 berlin_map_bezirksregion <- berlin_map %>%
   left_join(lor_max_zeit, by = c("BZR_ID" = "LOR"))
 
-# Basis-Karte erstellen
-p_reg <- ggplot(data = berlin_map_bezirksregion) +
-  geom_sf(aes(
+# Erstelle die interaktive Karte mit ggiraph
+p_reg_ggiraph <- ggplot(data = berlin_map_bezirksregion) +
+  geom_sf_interactive(aes(
     fill = factor(max_zeit),  # Farbe nach der Stunde mit den meisten Diebstählen
-    text = paste0("Bezirk: ", BZR_NAME, 
-                  "<br>Höchste Fälle um ", max_zeit, " Uhr: ", max_anzahl, " Fälle",
-                  "<br>Zweitmeiste Fälle um ", zweitmax_zeit, " Uhr: ", zweitmax_anzahl, " Fälle")
+    tooltip = paste0(
+      "Bezirk: ", BZR_NAME, 
+      "<br>Höchste Fälle um ", max_zeit, " Uhr: ", max_anzahl, " Fälle",
+      "<br>Zweitmeiste Fälle um ", zweitmax_zeit, " Uhr: ", zweitmax_anzahl, " Fälle"
+    ),  # Tooltip-Inhalt
+    data_id = BZR_NAME  # Interaktive ID für Bezirksregionen
   ), color = "black") +
   scale_fill_viridis_d(name = "Uhrzeit") +  # Alternativ: Verwende das "viridis"-Farbschema
   theme_minimal() +
@@ -1383,17 +1651,34 @@ p_reg <- ggplot(data = berlin_map_bezirksregion) +
     caption = "Quelle: Fahrraddiebstahl-Datensatz"
   )
 
-# Entferne `factor(max_zeit)=` aus dem Tooltip
-interactive_map_reg <- ggplotly(p_reg, tooltip = c("text"))
-interactive_map_reg
-```
-Die Karte zeigt die Verteilung von Fahrraddiebstählen in Berlin nach Bezirken und den zugehörigen Uhrzeiten. Die verschiedenen Farben repräsentieren die Uhrzeit, zu der in einem Bezirk die meisten Diebstähle verzeichnet wurden. Die gut unterscheidbaren Farben verdeutlichen, dass die bevorzugten Tatzeiten je Bezirksregion variieren. Auffällig ist jedoch, dass die meisten Diebstähle überwiegend am Nachmittag stattfinden – ein Muster, das bereits in den vorherigen Diagrammen festgestellt wurde.
+# Erstelle die ggiraph-Visualisierung
+interactive_map_reg_ggiraph <- girafe(ggobj = p_reg_ggiraph)
 
-Eine besondere Bezirksregion auf der Karte ist "Schmöckwitz". Hier wurden keine Fahrraddiebstähle registriert, die innerhalb einer Zeitdauer von höchstens 2 Minuten begangen wurden. Um auch für diesen Bezirk Ergebnisse zu erhalten, könnte es sinnvoll sein, die analysierte Zeitdauer etwas zu erhöhen.
+# Passe ggiraph-Einstellungen an (optional)
+interactive_map_reg_ggiraph <- girafe_options(
+  interactive_map_reg_ggiraph,
+  opts_hover(css = "fill:grey;cursor:pointer;"),
+  opts_tooltip(css = "background-color:white;color:black;padding:5px;border-radius:5px;")
+)
+
+# Zeige die interaktive Karte
+interactive_map_reg_ggiraph
+```
+
+Die Karte zeigt die Verteilung von Fahrraddiebstählen in Berlin nach Bezirken und den zugehörigen Uhrzeiten.
+Die verschiedenen Farben repräsentieren die Uhrzeit, zu der in einem Bezirk die meisten Diebstähle verzeichnet wurden.
+Die gut unterscheidbaren Farben verdeutlichen, dass die bevorzugten Tatzeiten je Bezirksregion variieren.
+Auffällig ist jedoch, dass die meisten Diebstähle überwiegend am Nachmittag stattfinden – ein Muster, das bereits in den vorherigen Diagrammen festgestellt wurde.
+
+Eine besondere Bezirksregion auf der Karte ist "Schmöckwitz".
+Hier wurden keine Fahrraddiebstähle registriert, die innerhalb einer Zeitdauer von höchstens 2 Minuten begangen wurden.
+Um auch für diesen Bezirk Ergebnisse zu erhalten, könnte es sinnvoll sein, die analysierte Zeitdauer etwas zu erhöhen.
 
 ### Anpassung der Karte mit den präferierten Uhrzeiten je Bezirksregion
 
-Da für die Bezirksregion "Schmöckwitz" bei einer Dauer von ≤ 2 Stunden keine Fahrraddiebstahldaten vorhanden sind, muss die Toleranz für die Dauer angepasst werden. Zunächst wird die minimale Dauer berechnet, die erforderlich ist, um für Schmöckwitz Daten zu finden. Es ist dabei zu berücksichtigen, dass Schmöckwitz lediglich maximal 10 Fälle aufweist, was sich auch in der vorherigen Analyse der absoluten Anzahl an Fahrraddiebstählen pro Bezirk gezeigt hat.
+Da für die Bezirksregion "Schmöckwitz" bei einer Dauer von ≤ 2 Stunden keine Fahrraddiebstahldaten vorhanden sind, muss die Toleranz für die Dauer angepasst werden.
+Zunächst wird die minimale Dauer berechnet, die erforderlich ist, um für Schmöckwitz Daten zu finden.
+Es ist dabei zu berücksichtigen, dass Schmöckwitz lediglich maximal 10 Fälle aufweist, was sich auch in der vorherigen Analyse der absoluten Anzahl an Fahrraddiebstählen pro Bezirk gezeigt hat.
 
 ```{r}
 # LOR-Substring für den Bezirk "Schmöckwitz" finden
@@ -1417,7 +1702,10 @@ schmoeckwitz_daten <- fahrraddiebstahl_dauer_df %>%
 knitr::kable(schmoeckwitz_daten, caption = "Zusammenfassung der Fahrraddiebstähle in Schmöckwitz")
 ```
 
-Die minimale Dauer, bei der für Schmöckwitz Daten übermittelt werden, liegt bei ≤ 4 Stunden. Da die Gesamtzahl der Fälle in diesem Bezirk 10 beträgt, wurde der relevante Datensatz korrekt identifiziert. Nun gilt es, zu bewerten, ob die Erhöhung der Toleranz auf ≤ 4 Stunden eine signifikante Abweichung im Verlauf der präferierten Uhrzeiten im Vergleich zu den Daten mit einer Dauer von <1 Stunde darstellt. Dies soll durch die folgende grafische Darstellung veranschaulicht werden.
+Die minimale Dauer, bei der für Schmöckwitz Daten übermittelt werden, liegt bei ≤ 4 Stunden.
+Da die Gesamtzahl der Fälle in diesem Bezirk 10 beträgt, wurde der relevante Datensatz korrekt identifiziert.
+Nun gilt es, zu bewerten, ob die Erhöhung der Toleranz auf ≤ 4 Stunden eine signifikante Abweichung im Verlauf der präferierten Uhrzeiten im Vergleich zu den Daten mit einer Dauer von \<1 Stunde darstellt.
+Dies soll durch die folgende grafische Darstellung veranschaulicht werden.
 
 ```{r}
 # Filtere die Datensätze mit DAUER <= 4
@@ -1443,10 +1731,15 @@ ggplot(stunden_anzahl_beschränkte_dauer, aes(x = TATZEIT_STUNDE_ANZAHL, y = Anz
   ) +
   theme_minimal()
 ```
-Tatsächlich zeigt sich, dass sich der Datensatz bei einer Toleranz von 4 Stunden stärker unterscheidet. Ein solches Intervall für die Erfassung von Fahrraddiebstählen erscheint zu hoch und verzerrt die Ergebnisse hinsichtlich der präferierten Uhrzeiten. Daher ist es nicht sinnvoll, die Toleranz auf ≤ 4 Stunden zu erhöhen. Die Bezirksregion Schmöckwitz sollte daher als Ausnahme betrachtet werden. Dennoch wurde zur Vollständigkeit eine Karte mit der erhöhten Toleranz (≤ 4 Stunden) erstellt.
+
+Tatsächlich zeigt sich, dass sich der Datensatz bei einer Toleranz von 4 Stunden stärker unterscheidet.
+Ein solches Intervall für die Erfassung von Fahrraddiebstählen erscheint zu hoch und verzerrt die Ergebnisse hinsichtlich der präferierten Uhrzeiten.
+Daher ist es nicht sinnvoll, die Toleranz auf ≤ 4 Stunden zu erhöhen.
+Die Bezirksregion Schmöckwitz sollte daher als Ausnahme betrachtet werden.
+Dennoch wurde zur Vollständigkeit eine Karte mit der erhöhten Toleranz (≤ 4 Stunden) erstellt.
 
 ```{r}
-# Filtere die Datensätze mit DAUER <=4
+# Filtere die Datensätze mit DAUER <=2
 fahrraddiebstahl_beschränkte_dauer_df <- fahrraddiebstahl_dauer_df %>%
   filter(Dauer <= 4)
 
@@ -1472,15 +1765,18 @@ lor_max_zeit <- lor_zeit_anzahl %>%
 berlin_map_bezirksregion <- berlin_map %>%
   left_join(lor_max_zeit, by = c("BZR_ID" = "LOR"))
 
-# Basis-Karte erstellen
-p_reg <- ggplot(data = berlin_map_bezirksregion) +
-  geom_sf(aes(
+# Erstelle die interaktive Karte der Bezirke basierend auf den maximalen und zweitgrößten Diebstählen pro LOR
+p_reg_ggiraph <- ggplot(data = berlin_map_bezirksregion) +
+  geom_sf_interactive(aes(
     fill = factor(max_zeit),  # Farbe nach der Stunde mit den meisten Diebstählen
-    text = paste0("Bezirk: ", BZR_NAME, 
-                  "<br>Höchste Fälle um ", max_zeit, " Uhr: ", max_anzahl, " Fälle",
-                  "<br>Zweitmeiste Fälle um ", zweitmax_zeit, " Uhr: ", zweitmax_anzahl, " Fälle")
+    tooltip = paste0(
+      "Bezirk: ", BZR_NAME, 
+      "<br>Höchste Fälle um ", max_zeit, " Uhr: ", max_anzahl, " Fälle",
+      "<br>Zweitmeiste Fälle um ", zweitmax_zeit, " Uhr: ", zweitmax_anzahl, " Fälle"
+    ),  # Tooltip-Inhalt
+    data_id = BZR_ID  # Interaktive ID für Bezirke
   ), color = "black") +
-  scale_fill_viridis_d(name = "Uhrzeit") +  # Alternativ: Verwende das "viridis"-Farbschema
+  scale_fill_viridis_d(name = "Uhrzeit") +  # Viridis Farbschema
   theme_minimal() +
   labs(
     title = "Fahrraddiebstähle in Berlin: Bezirke und Uhrzeiten",
@@ -1488,16 +1784,30 @@ p_reg <- ggplot(data = berlin_map_bezirksregion) +
     caption = "Quelle: Fahrraddiebstahl-Datensatz"
   )
 
-# Entferne `factor(max_zeit)=` aus dem Tooltip
-interactive_map_reg <- ggplotly(p_reg, tooltip = c("text"))
+# Erstelle die ggiraph-Visualisierung
+interactive_map_reg <- girafe(ggobj = p_reg_ggiraph)
+
+# Passe ggiraph-Einstellungen an (optional)
+interactive_map_reg <- girafe_options(
+  interactive_map_reg,
+  opts_hover(css = "fill:grey;cursor:pointer;"),
+  opts_tooltip(css = "background-color:white;color:black;padding:5px;border-radius:5px;")
+)
+
+# Zeige die interaktive Karte
 interactive_map_reg
 ```
 
-Bei dieser Dauer liegt lediglich ein Fall vor, der um 16 Uhr beginnt und um 20 Uhr endet. Mit dieser Information kann jedoch wenig erreicht werden, da dieses lange Intervall keine zuverlässigen Rückschlüsse auf präferierte Uhrzeiten zulässt.
+Bei dieser Dauer liegt lediglich ein Fall vor, der um 16 Uhr beginnt und um 20 Uhr endet.
+Mit dieser Information kann jedoch wenig erreicht werden, da dieses lange Intervall keine zuverlässigen Rückschlüsse auf präferierte Uhrzeiten zulässt.
 
 ## Anzahl der Tatzeiten je Tag/Monat
 
-In diesem Kapitel werden die Diebstahlszahlen an verschiedenen Tagen und Monaten analysiert. Dabei wird das Datum des Diebstahls, also das "TATZEIT_ENDE_DATUM", berücksichtigt. Die maximale Dauer für einen Diebstahl liegt bei drei Tagen, da längere Zeiträume nicht im Datensatz enthalten sind. Eine Abweichung von drei Tagen ist aus der Perspektive von Jahr und Monat vernachlässigbar. Für die Analyse der präferierten Wochentage sollte jedoch die Dauer auf maximal einen Tag beschränkt werden, da der Diebstahl andernfalls auch an einem anderen Wochentag stattgefunden haben könnte.
+In diesem Kapitel werden die Diebstahlszahlen an verschiedenen Tagen und Monaten analysiert.
+Dabei wird das Datum des Diebstahls, also das "TATZEIT_ENDE_DATUM", berücksichtigt.
+Die maximale Dauer für einen Diebstahl liegt bei drei Tagen, da längere Zeiträume nicht im Datensatz enthalten sind.
+Eine Abweichung von drei Tagen ist aus der Perspektive von Jahr und Monat vernachlässigbar.
+Für die Analyse der präferierten Wochentage sollte jedoch die Dauer auf maximal einen Tag beschränkt werden, da der Diebstahl andernfalls auch an einem anderen Wochentag stattgefunden haben könnte.
 
 ### Präparation des Datensatzen
 
@@ -1530,7 +1840,11 @@ ggplot(datum_anzahl, aes(x = TATZEIT_DATUM_ANZAHL, y = Anzahl, fill = Monat)) +
   ) +
   theme_minimal()
 ```
-Das Diagramm zeigt die absolute Anzahl der Fahrraddiebstähle pro Tag, basierend auf dem gesamten Datensatz. Der Tag wird durch das angegebene Anfangsdatum des jeweiligen Tatzeitraums bestimmt. Es ist deutlich erkennbar, dass die Anzahl der Diebstähle während der Sommermonate ansteigt. Eine plausible Erklärung hierfür ist, dass in dieser Zeit mehr Menschen unterwegs sind, was die Wahrscheinlichkeit von Fahrraddiebstählen erhöht.
+
+Das Diagramm zeigt die absolute Anzahl der Fahrraddiebstähle pro Tag, basierend auf dem gesamten Datensatz.
+Der Tag wird durch das angegebene Anfangsdatum des jeweiligen Tatzeitraums bestimmt.
+Es ist deutlich erkennbar, dass die Anzahl der Diebstähle während der Sommermonate ansteigt.
+Eine plausible Erklärung hierfür ist, dass in dieser Zeit mehr Menschen unterwegs sind, was die Wahrscheinlichkeit von Fahrraddiebstählen erhöht.
 
 ### Absolute Anzahl der Diebstähle je Wochentag + Monat
 
@@ -1564,10 +1878,14 @@ ggplot(wochentag_monat_anzahl, aes(x = Wochentag, y = Anzahl, fill = Monat)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-Das Diagramm zeigt die Anzahl der Fahrraddiebstähle in Abhängigkeit von Wochentag und Monat. Hierbei wurden ausschließlich Tatzeiträume berücksichtigt, die maximal einen Tag umfassten, um eine Vermischung der Wochentage zu vermeiden.
 
-**Saisonalität:** Wie auch im vorherigen Diagramm ist eine saisonale Schwankung der Diebstähle erkennbar. Besonders in den wärmeren Monaten (Mai bis August) steigt die Zahl der Diebstähle, während sie in den kälteren Monaten tendenziell sinkt.
-**Wochentagsabhängigkeit:** Ein eindeutiger Trend hinsichtlich bestimmter Wochentage lässt sich nicht erkennen. Die Anzahl der Diebstähle variiert zwar, jedoch ohne eine klare Tendenz für bestimmte Wochentage.
+Das Diagramm zeigt die Anzahl der Fahrraddiebstähle in Abhängigkeit von Wochentag und Monat.
+Hierbei wurden ausschließlich Tatzeiträume berücksichtigt, die maximal einen Tag umfassten, um eine Vermischung der Wochentage zu vermeiden.
+
+**Saisonalität:** Wie auch im vorherigen Diagramm ist eine saisonale Schwankung der Diebstähle erkennbar.
+Besonders in den wärmeren Monaten (Mai bis August) steigt die Zahl der Diebstähle, während sie in den kälteren Monaten tendenziell sinkt.
+**Wochentagsabhängigkeit:** Ein eindeutiger Trend hinsichtlich bestimmter Wochentage lässt sich nicht erkennen.
+Die Anzahl der Diebstähle variiert zwar, jedoch ohne eine klare Tendenz für bestimmte Wochentage.
 **Monatliche Schwankungen:** Auch innerhalb eines Monats gibt es Schwankungen in der Zahl der Diebstähle, jedoch sind diese weniger ausgeprägt als die saisonalen Unterschiede.
 
 ### Durchschnittliche Anzahl der Diebstähle nach Wochentag
@@ -1604,11 +1922,13 @@ ggplot(wochentag_anzahl, aes(x = Wochentag, y = Anzahl, fill = Wochentag)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
 Das Diagramm zeigt die Anzahl der Fahrraddiebstähle in Bezug auf die jeweiligen Wochentage, wobei ausschließlich Daten berücksichtigt wurden, deren Dauer einen Tag nicht überschreitet.
 
 **Höchste Diebstahlzahlen:** Die meisten Diebstähle treten an den Werktagen Mittwoch und Donnerstag auf.
 **Niedrigste Diebstahlzahlen:** Am Wochenende, insbesondere samstags, sind die Diebstahlzahlen am niedrigsten.
-**Allgemeiner Trend:** Ein deutlicher Unterschied zwischen Werktagen (Montag bis Freitag) und dem Wochenende (Samstag und Sonntag) ist erkennbar. An Werktagen ist die Zahl der Diebstähle insgesamt höher.
+**Allgemeiner Trend:** Ein deutlicher Unterschied zwischen Werktagen (Montag bis Freitag) und dem Wochenende (Samstag und Sonntag) ist erkennbar.
+An Werktagen ist die Zahl der Diebstähle insgesamt höher.
 
 Wie bereits in der Analyse der Zeiträume festgestellt, werden viele Fahrraddiebstähle an Wochenendtagen erst in der darauffolgenden Woche bemerkt, was zu der niedrigeren Anzahl an Diebstählen am Wochenende führt.
 
@@ -1642,10 +1962,19 @@ ggplot(monat_jahr_anzahl, aes(x = Monat, y = Anzahl, fill = factor(Jahr))) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Optional: für bessere Lesbarkeit der Monatsnamen
 ```
-Das Diagramm zeigt die Anzahl der Fahrraddiebstähle pro Monat für die Jahre 2023 und 2024. In Form eines Balkendiagramms wird die monatliche Variation der Diebstahlszahlen veranschaulicht. Die Balken sind nach Jahren farblich unterteilt, um einen direkten Vergleich zu ermöglichen. Für diese Analyse wurde der gesamte Datensatz verwendet, da eine umfassende Datenbasis angestrebt wird. Eine Verzerrung könnte jedoch auftreten, wenn ein erheblicher Teil der Tatzeiten in einem anderen Monat beginnt, als sie enden. Diese potenzielle Verzerrung wird im weiteren Verlauf dieses Unterkapitels genauer untersucht.
 
-**Saisonalität**: Die Zahl der Fahrraddiebstähle weist ausgeprägte saisonale Schwankungen auf. In den wärmeren Monaten, etwa von April bis September, sind die Diebstähle deutlich häufiger, was auf den Einfluss des Wetters auf das Fahrradfahren und die damit verbundene Anfälligkeit für Diebstähle hinweist.
-**Jährlicher Vergleich**: Zwischen den Jahren 2023 und 2024 gibt es auffällige Unterschiede in den Diebstahlzahlen. In Monaten wie Mai und Juni 2024 wurden mehr Fahrräder gestohlen als im Vorjahr, während die Zahlen in anderen Monaten, etwa im Oktober, rückläufig waren. Insgesamt lässt sich jedoch ein ähnlicher saisonaler Verlauf in beiden Jahren erkennen.
+Das Diagramm zeigt die Anzahl der Fahrraddiebstähle pro Monat für die Jahre 2023 und 2024.
+In Form eines Balkendiagramms wird die monatliche Variation der Diebstahlszahlen veranschaulicht.
+Die Balken sind nach Jahren farblich unterteilt, um einen direkten Vergleich zu ermöglichen.
+Für diese Analyse wurde der gesamte Datensatz verwendet, da eine umfassende Datenbasis angestrebt wird.
+Eine Verzerrung könnte jedoch auftreten, wenn ein erheblicher Teil der Tatzeiten in einem anderen Monat beginnt, als sie enden.
+Diese potenzielle Verzerrung wird im weiteren Verlauf dieses Unterkapitels genauer untersucht.
+
+**Saisonalität**: Die Zahl der Fahrraddiebstähle weist ausgeprägte saisonale Schwankungen auf.
+In den wärmeren Monaten, etwa von April bis September, sind die Diebstähle deutlich häufiger, was auf den Einfluss des Wetters auf das Fahrradfahren und die damit verbundene Anfälligkeit für Diebstähle hinweist.
+**Jährlicher Vergleich**: Zwischen den Jahren 2023 und 2024 gibt es auffällige Unterschiede in den Diebstahlzahlen.
+In Monaten wie Mai und Juni 2024 wurden mehr Fahrräder gestohlen als im Vorjahr, während die Zahlen in anderen Monaten, etwa im Oktober, rückläufig waren.
+Insgesamt lässt sich jedoch ein ähnlicher saisonaler Verlauf in beiden Jahren erkennen.
 **Höchstwerte**: Die meisten Diebstähle traten in den Monaten Mai, Juni und Juli in beiden Jahren auf.
 **Tiefstwerte**: Die wenigsten Diebstähle wurden in den Wintermonaten (Dezember, Januar, Februar) verzeichnet.
 
@@ -1703,7 +2032,11 @@ analyse_zeiten <- fahrraddiebstahl_ueber_mehrere_monate %>%
 kable(analyse_zeiten, caption = "Analyse der Stundenverteilung bei Diebstählen über zwei Monate", format = "markdown")
 ```
 
-Das Ergebnis zeigt, dass die Unterschiede signifikant sind. Es gibt fast doppelt so viele Stunden im anderen Monat, die zu Beginn erfasst wurden, im Vergleich zu denen, die in den folgenden Monat übergehen. Trotz dieser Verlagerung bleibt die Stundenanzahl im ursprünglichen Monat höher. Eine Tatzeitdauer von nur 3 Tagen ist daher nicht ausreichend, um diese Unterschiede angemessen zu erfassen. Die nachfolgende Analyse basiert darauf, die geeignete Tatzeitdauer zu ermitteln, um die Unterschiede präzise zu erfassen und eine aussagekräftige Auswertung zu gewährleisten.
+Das Ergebnis zeigt, dass die Unterschiede signifikant sind.
+Es gibt fast doppelt so viele Stunden im anderen Monat, die zu Beginn erfasst wurden, im Vergleich zu denen, die in den folgenden Monat übergehen.
+Trotz dieser Verlagerung bleibt die Stundenanzahl im ursprünglichen Monat höher.
+Eine Tatzeitdauer von nur 3 Tagen ist daher nicht ausreichend, um diese Unterschiede angemessen zu erfassen.
+Die nachfolgende Analyse basiert darauf, die geeignete Tatzeitdauer zu ermitteln, um die Unterschiede präzise zu erfassen und eine aussagekräftige Auswertung zu gewährleisten.
 
 ```{r}
 # Filtern der Diebstähle mit Dauer <= 24 Stunden
@@ -1759,7 +2092,8 @@ analyse_zeiten <- fahrraddiebstahl_ueber_mehrere_monate %>%
 kable(analyse_zeiten, caption = "Analyse der Stundenverteilung bei Diebstählen über zwei Monate", format = "markdown")
 ```
 
-Bei einer Tatzeitdauer von einem Tag sind die Unterschiede ebenfalls signifikant und sogar anteilig noch ausgeprägter (Faktor 5). Dies deutet darauf hin, dass diese Zeitspanne ebenfalls nicht ausreicht, um die tatsächlichen Schwankungen adäquat abzubilden.
+Bei einer Tatzeitdauer von einem Tag sind die Unterschiede ebenfalls signifikant und sogar anteilig noch ausgeprägter (Faktor 5).
+Dies deutet darauf hin, dass diese Zeitspanne ebenfalls nicht ausreicht, um die tatsächlichen Schwankungen adäquat abzubilden.
 
 ```{r}
 # Filtern der Diebstähle mit Dauer <= 24 Stunden
@@ -1816,11 +2150,18 @@ analyse_zeiten <- fahrraddiebstahl_ueber_mehrere_monate %>%
 kable(analyse_zeiten, caption = "Analyse der Stundenverteilung bei Diebstählen über zwei Monate", format = "markdown")
 ```
 
-Bei einer Tatzeitdauer von ≤ 6 Stunden sind die Unterschiede ebenfalls präsent und, anteilig betrachtet, sogar fast um den Faktor 4 ausgeprägter. Dies deutet darauf hin, dass eine so kurze Zeitspanne möglicherweise nicht ausreicht, um die tatsächlichen Schwankungen korrekt abzubilden. Da die Einteilung in noch kleinere Tatzeiträume den Datensatz erheblich verkleinern würde, erscheint ein Tatzeitraum von ≤ 73 Stunden als die beste Wahl, um eine genauere und aussagekräftigere Analyse zu ermöglichen. Somit ist das oben dargestellte Balkendiagramm mit der Tatzeitdauereinteilung von ≤ 73 Stunden für den Datensatz am besten geeignet, da es die Verteilung der präferierten Tatzeiten zwar mit einer kleinen Verzerrung, aber dennoch, wie die Analyse zeigte, am besten abbildet.
+Bei einer Tatzeitdauer von ≤ 6 Stunden sind die Unterschiede ebenfalls präsent und, anteilig betrachtet, sogar fast um den Faktor 4 ausgeprägter.
+Dies deutet darauf hin, dass eine so kurze Zeitspanne möglicherweise nicht ausreicht, um die tatsächlichen Schwankungen korrekt abzubilden.
+Da die Einteilung in noch kleinere Tatzeiträume den Datensatz erheblich verkleinern würde, erscheint ein Tatzeitraum von ≤ 73 Stunden als die beste Wahl, um eine genauere und aussagekräftigere Analyse zu ermöglichen.
+Somit ist das oben dargestellte Balkendiagramm mit der Tatzeitdauereinteilung von ≤ 73 Stunden für den Datensatz am besten geeignet, da es die Verteilung der präferierten Tatzeiten zwar mit einer kleinen Verzerrung, aber dennoch, wie die Analyse zeigte, am besten abbildet.
 
 ### Durchschnittliche Anzahl der Fälle von Fahrraddiebstählen nach Monat
 
-In diesem Unterkapitel wird abschließend zur Analyse der bevorzugten Tage und Monate die durchschnittliche Anzahl der Diebstähle pro Monat dargestellt. Da der Datensatz aus zwei Jahren besteht, werden die Diebstahlzahlen durch zwei geteilt. Eine Ausnahme bilden die Monate Oktober, November und Dezember, da für das Jahr 2024 nur Daten bis zum 18. Oktober vorliegen. Diese Erkenntnisse wurden durch die Betrachtung des Datensatzes in der Anwendung Excel gewonnen.
+In diesem Unterkapitel wird abschließend zur Analyse der bevorzugten Tage und Monate die durchschnittliche Anzahl der Diebstähle pro Monat dargestellt.
+Da der Datensatz aus zwei Jahren besteht, werden die Diebstahlzahlen durch zwei geteilt.
+Eine Ausnahme bilden die Monate Oktober, November und Dezember, da für das Jahr 2024 nur Daten bis zum 18.
+Oktober vorliegen.
+Diese Erkenntnisse wurden durch die Betrachtung des Datensatzes in der Anwendung Excel gewonnen.
 
 ```{r}
 # Konvertiere TATZEIT_ANFANG_DATUM zu Datum und extrahiere den Monat
@@ -1856,11 +2197,19 @@ ggplot(monat_anzahl, aes(x = Monat, y = Anzahl, fill = Monat)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Optional: für bessere Lesbarkeit der Monatsnamen
 ```
-Das Diagramm zeigt die durchschnittliche Anzahl von Fahrraddiebstählen pro Monat. In Form eines Balkendiagramms veranschaulicht die Höhe jedes Balkens die durchschnittliche Diebstahlzahl für einen bestimmten Monat. Die Balken sind farblich nach Monaten unterteilt, wodurch saisonale Schwankungen auf einen Blick erkennbar sind. Auch hier wurde der gesamte Datensatz verwendet, da die zugrunde liegende Begründung für diese Analyse ebenso gilt. Es handelt sich um die gleichen analysierten Daten, lediglich aufbereitet durch die Berechnung von Durchschnittswerten.
+
+Das Diagramm zeigt die durchschnittliche Anzahl von Fahrraddiebstählen pro Monat.
+In Form eines Balkendiagramms veranschaulicht die Höhe jedes Balkens die durchschnittliche Diebstahlzahl für einen bestimmten Monat.
+Die Balken sind farblich nach Monaten unterteilt, wodurch saisonale Schwankungen auf einen Blick erkennbar sind.
+Auch hier wurde der gesamte Datensatz verwendet, da die zugrunde liegende Begründung für diese Analyse ebenso gilt.
+Es handelt sich um die gleichen analysierten Daten, lediglich aufbereitet durch die Berechnung von Durchschnittswerten.
 
 **Saisonalität**: Auch hier sind deutliche Schwankungen sichtbar.
 **Höchstwerte**: Der Mai weist die höchste Anzahl an Fahrraddiebstählen auf.
 **Tiefstwerte**: Die geringsten Diebstahlszahlen treten in den Wintermonaten (Dezember, Januar, Februar) auf.
 
-## Fazit der präferierten Zeiten
-Abschließend lässt sich zum Kapitel der präferierten Zeiten festhalten, dass die meisten Fahrraddiebstähle am Nachmittag stattfinden. Zudem ist die Anzahl der Diebstähle an Werktagen deutlich höher. In der warmen Saison steigen die Diebstahlzahlen erheblich an.
+## Fazit
+
+Abschließend lässt sich zum Kapitel der präferierten Zeiten festhalten, dass die meisten Fahrraddiebstähle am Nachmittag stattfinden.
+Zudem ist die Anzahl der Diebstähle an Werktagen deutlich höher.
+In der warmen Saison steigen die Diebstahlzahlen erheblich an.
